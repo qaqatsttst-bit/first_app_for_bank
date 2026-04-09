@@ -3,8 +3,6 @@ using System;
 using FirstAppForBank.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -111,6 +109,78 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("services", (string)null);
             });
 
+        modelBuilder.Entity("FirstAppForBank.Domain.Models.ServiceComment", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
+
+                b.Property<string>("AuthorName")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<string>("CommentText")
+                    .IsRequired()
+                    .HasMaxLength(4000)
+                    .HasColumnType("character varying(4000)");
+
+                b.Property<DateTimeOffset>("CreatedAt")
+                    .HasColumnName("created_at")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<Guid>("ServiceId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Id");
+
+                b.HasIndex("ServiceId");
+
+                b.ToTable("service_comments", (string)null);
+            });
+
+        modelBuilder.Entity("FirstAppForBank.Domain.Models.ServiceStatusHistory", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uuid");
+
+                b.Property<DateTimeOffset>("ChangedAt")
+                    .HasColumnName("changed_at")
+                    .HasColumnType("timestamp with time zone");
+
+                b.Property<string>("ChangeSource")
+                    .HasMaxLength(200)
+                    .HasColumnType("character varying(200)");
+
+                b.Property<string>("ChangeSourceType")
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnType("character varying(50)");
+
+                b.Property<string>("Comment")
+                    .HasMaxLength(2000)
+                    .HasColumnType("character varying(2000)");
+
+                b.Property<string>("NewStatus")
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnType("character varying(50)");
+
+                b.Property<string>("OldStatus")
+                    .HasMaxLength(50)
+                    .HasColumnType("character varying(50)");
+
+                b.Property<Guid>("ServiceId")
+                    .HasColumnType("uuid");
+
+                b.HasKey("Id");
+
+                b.HasIndex("ServiceId");
+
+                b.ToTable("service_status_history", (string)null);
+            });
+
         modelBuilder.Entity("FirstAppForBank.Domain.Models.Service", b =>
             {
                 b.HasOne("FirstAppForBank.Domain.Models.Category", "Category")
@@ -122,9 +192,38 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.Navigation("Category");
             });
 
+        modelBuilder.Entity("FirstAppForBank.Domain.Models.ServiceComment", b =>
+            {
+                b.HasOne("FirstAppForBank.Domain.Models.Service", "Service")
+                    .WithMany("Comments")
+                    .HasForeignKey("ServiceId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("Service");
+            });
+
+        modelBuilder.Entity("FirstAppForBank.Domain.Models.ServiceStatusHistory", b =>
+            {
+                b.HasOne("FirstAppForBank.Domain.Models.Service", "Service")
+                    .WithMany("StatusHistory")
+                    .HasForeignKey("ServiceId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("Service");
+            });
+
         modelBuilder.Entity("FirstAppForBank.Domain.Models.Category", b =>
             {
                 b.Navigation("Services");
+            });
+
+        modelBuilder.Entity("FirstAppForBank.Domain.Models.Service", b =>
+            {
+                b.Navigation("Comments");
+
+                b.Navigation("StatusHistory");
             });
 #pragma warning restore 612, 618
     }

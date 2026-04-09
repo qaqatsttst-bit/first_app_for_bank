@@ -17,6 +17,10 @@ public sealed class AppDbContextSeed(AppDbContext dbContext)
         var internalCoreCategoryId = Guid.Parse("bbbbbbbb-1111-2222-3333-bbbbbbbbbbbb");
         var riskCategoryId = Guid.Parse("cccccccc-1111-2222-3333-cccccccccccc");
 
+        var koronapayId = Guid.Parse("11111111-aaaa-bbbb-cccc-111111111111");
+        var paymentRoutingId = Guid.Parse("22222222-aaaa-bbbb-cccc-222222222222");
+        var fraudCheckId = Guid.Parse("33333333-aaaa-bbbb-cccc-333333333333");
+
         var categories =
             new[]
             {
@@ -45,7 +49,7 @@ public sealed class AppDbContextSeed(AppDbContext dbContext)
             {
                 new Service
                 {
-                    Id = Guid.Parse("11111111-aaaa-bbbb-cccc-111111111111"),
+                    Id = koronapayId,
                     Name = "KoronaPay",
                     CategoryId = externalPaymentsCategoryId,
                     Description = "Внешний платежный сервис для обработки операций по международным и внешним направлениям.",
@@ -60,7 +64,7 @@ public sealed class AppDbContextSeed(AppDbContext dbContext)
                 },
                 new Service
                 {
-                    Id = Guid.Parse("22222222-aaaa-bbbb-cccc-222222222222"),
+                    Id = paymentRoutingId,
                     Name = "Payment Routing",
                     CategoryId = internalCoreCategoryId,
                     Description = "Внутренний сервис маршрутизации платежей между системами банка и внешними шлюзами.",
@@ -75,7 +79,7 @@ public sealed class AppDbContextSeed(AppDbContext dbContext)
                 },
                 new Service
                 {
-                    Id = Guid.Parse("33333333-aaaa-bbbb-cccc-333333333333"),
+                    Id = fraudCheckId,
                     Name = "Fraud Check Gateway",
                     CategoryId = riskCategoryId,
                     Description = "Интеграционный сервис, отвечающий за передачу платежных событий в контур антифрода.",
@@ -90,8 +94,71 @@ public sealed class AppDbContextSeed(AppDbContext dbContext)
                 }
             };
 
+        var history =
+            new[]
+            {
+                new ServiceStatusHistory
+                {
+                    ServiceId = koronapayId,
+                    OldStatus = ServiceStatus.Degraded,
+                    NewStatus = ServiceStatus.Ok,
+                    ChangeSource = "Prometheus",
+                    ChangeSourceType = "integration",
+                    Comment = "Метрики стабилизировались, error rate вернулся к норме.",
+                    ChangedAt = DateTimeOffset.UtcNow.AddMinutes(-12)
+                },
+                new ServiceStatusHistory
+                {
+                    ServiceId = paymentRoutingId,
+                    OldStatus = ServiceStatus.Ok,
+                    NewStatus = ServiceStatus.Degraded,
+                    ChangeSource = "Alertmanager",
+                    ChangeSourceType = "integration",
+                    Comment = "Сработал алерт по росту latency на критическом маршруте.",
+                    ChangedAt = DateTimeOffset.UtcNow.AddMinutes(-27)
+                },
+                new ServiceStatusHistory
+                {
+                    ServiceId = fraudCheckId,
+                    OldStatus = ServiceStatus.Ok,
+                    NewStatus = ServiceStatus.Unknown,
+                    ChangeSource = "System",
+                    ChangeSourceType = "system",
+                    Comment = "Источник телеметрии временно не отвечает, данные считаются устаревшими.",
+                    ChangedAt = DateTimeOffset.UtcNow.AddHours(-2)
+                }
+            };
+
+        var comments =
+            new[]
+            {
+                new ServiceComment
+                {
+                    ServiceId = koronapayId,
+                    AuthorName = "Алексей Иванов",
+                    CommentText = "Проверили внешний контур, сервис работает штатно после кратковременной деградации.",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-10)
+                },
+                new ServiceComment
+                {
+                    ServiceId = paymentRoutingId,
+                    AuthorName = "Мария Петрова",
+                    CommentText = "Нужно проверить узкий участок маршрутизации и сравнить динамику за последние 30 минут.",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-20)
+                },
+                new ServiceComment
+                {
+                    ServiceId = fraudCheckId,
+                    AuthorName = "Дежурный инженер",
+                    CommentText = "Ожидаем восстановление сигнала от внешнего источника, инцидент пока не подтвержден как Down.",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-95)
+                }
+            };
+
         await dbContext.Categories.AddRangeAsync(categories, cancellationToken);
         await dbContext.Services.AddRangeAsync(services, cancellationToken);
+        await dbContext.ServiceStatusHistory.AddRangeAsync(history, cancellationToken);
+        await dbContext.ServiceComments.AddRangeAsync(comments, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

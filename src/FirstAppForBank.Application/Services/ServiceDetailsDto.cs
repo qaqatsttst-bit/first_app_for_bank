@@ -25,4 +25,8 @@ public sealed class ServiceDetailsDto
     public string? Notes { get; init; }
 
     public DateTimeOffset LastStatusChangedAt { get; init; }
+
+    public IReadOnlyCollection<ServiceStatusHistoryItemDto> StatusHistory { get; init; } = Array.Empty<ServiceStatusHistoryItemDto>();
+
+    public IReadOnlyCollection<ServiceCommentDto> Comments { get; init; } = Array.Empty<ServiceCommentDto>();
 }

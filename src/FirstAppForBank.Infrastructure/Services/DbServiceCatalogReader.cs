@@ -32,6 +32,8 @@ public sealed class DbServiceCatalogReader(AppDbContext dbContext) : IServiceCat
         return await dbContext.Services
             .AsNoTracking()
             .Include(x => x.Category)
+            .Include(x => x.StatusHistory)
+            .Include(x => x.Comments)
             .Where(x => x.Id == serviceId)
             .Select(x => new ServiceDetailsDto
             {
@@ -46,7 +48,28 @@ public sealed class DbServiceCatalogReader(AppDbContext dbContext) : IServiceCat
                 RunbookUrl = x.RunbookUrl,
                 DashboardUrl = x.DashboardUrl,
                 Notes = x.Notes,
-                LastStatusChangedAt = x.LastStatusChangedAt
+                LastStatusChangedAt = x.LastStatusChangedAt,
+                StatusHistory = x.StatusHistory
+                    .OrderByDescending(h => h.ChangedAt)
+                    .Select(h => new ServiceStatusHistoryItemDto
+                    {
+                        OldStatus = h.OldStatus.HasValue ? h.OldStatus.Value.ToString() : null,
+                        NewStatus = h.NewStatus.ToString(),
+                        ChangeSource = h.ChangeSource,
+                        ChangeSourceType = h.ChangeSourceType,
+                        Comment = h.Comment,
+                        ChangedAt = h.ChangedAt
+                    })
+                    .ToArray(),
+                Comments = x.Comments
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Select(c => new ServiceCommentDto
+                    {
+                        AuthorName = c.AuthorName,
+                        CommentText = c.CommentText,
+                        CreatedAt = c.CreatedAt
+                    })
+                    .ToArray()
             })
             .FirstOrDefaultAsync(cancellationToken);
     }

@@ -9,6 +9,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Service> Services => Set<Service>();
 
+    public DbSet<ServiceStatusHistory> ServiceStatusHistory => Set<ServiceStatusHistory>();
+
+    public DbSet<ServiceComment> ServiceComments => Set<ServiceComment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

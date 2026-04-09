@@ -19,7 +19,28 @@ public sealed class InMemoryServiceCatalogReader : IServiceCatalogReader
             RunbookUrl = "https://runbook.local/koronapay",
             DashboardUrl = "https://grafana.local/koronapay",
             Notes = "Сервис критичен для внешнего платежного контура.",
-            LastStatusChangedAt = DateTimeOffset.UtcNow.AddMinutes(-12)
+            LastStatusChangedAt = DateTimeOffset.UtcNow.AddMinutes(-12),
+            StatusHistory =
+            [
+                new ServiceStatusHistoryItemDto
+                {
+                    OldStatus = "Degraded",
+                    NewStatus = "Ok",
+                    ChangeSource = "Prometheus",
+                    ChangeSourceType = "integration",
+                    Comment = "Метрики стабилизировались, error rate вернулся к норме.",
+                    ChangedAt = DateTimeOffset.UtcNow.AddMinutes(-12)
+                }
+            ],
+            Comments =
+            [
+                new ServiceCommentDto
+                {
+                    AuthorName = "Алексей Иванов",
+                    CommentText = "Проверили внешний контур, сервис работает штатно после кратковременной деградации.",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-10)
+                }
+            ]
         },
         new ServiceDetailsDto
         {
@@ -34,7 +55,28 @@ public sealed class InMemoryServiceCatalogReader : IServiceCatalogReader
             RunbookUrl = "https://runbook.local/payment-routing",
             DashboardUrl = "https://grafana.local/payment-routing",
             Notes = "Наблюдается рост latency и нестабильность части запросов.",
-            LastStatusChangedAt = DateTimeOffset.UtcNow.AddMinutes(-27)
+            LastStatusChangedAt = DateTimeOffset.UtcNow.AddMinutes(-27),
+            StatusHistory =
+            [
+                new ServiceStatusHistoryItemDto
+                {
+                    OldStatus = "Ok",
+                    NewStatus = "Degraded",
+                    ChangeSource = "Alertmanager",
+                    ChangeSourceType = "integration",
+                    Comment = "Сработал алерт по росту latency на критическом маршруте.",
+                    ChangedAt = DateTimeOffset.UtcNow.AddMinutes(-27)
+                }
+            ],
+            Comments =
+            [
+                new ServiceCommentDto
+                {
+                    AuthorName = "Мария Петрова",
+                    CommentText = "Нужно проверить узкий участок маршрутизации и сравнить динамику за последние 30 минут.",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-20)
+                }
+            ]
         },
         new ServiceDetailsDto
         {
@@ -49,7 +91,28 @@ public sealed class InMemoryServiceCatalogReader : IServiceCatalogReader
             RunbookUrl = "https://runbook.local/fraud-check",
             DashboardUrl = "https://grafana.local/fraud-check",
             Notes = "Последнее обновление сигналов устарело, требуется проверка источника данных.",
-            LastStatusChangedAt = DateTimeOffset.UtcNow.AddHours(-2)
+            LastStatusChangedAt = DateTimeOffset.UtcNow.AddHours(-2),
+            StatusHistory =
+            [
+                new ServiceStatusHistoryItemDto
+                {
+                    OldStatus = "Ok",
+                    NewStatus = "Unknown",
+                    ChangeSource = "System",
+                    ChangeSourceType = "system",
+                    Comment = "Источник телеметрии временно не отвечает, данные считаются устаревшими.",
+                    ChangedAt = DateTimeOffset.UtcNow.AddHours(-2)
+                }
+            ],
+            Comments =
+            [
+                new ServiceCommentDto
+                {
+                    AuthorName = "Дежурный инженер",
+                    CommentText = "Ожидаем восстановление сигнала от внешнего источника, инцидент пока не подтвержден как Down.",
+                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-95)
+                }
+            ]
         }
     ];
 

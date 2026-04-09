@@ -31,4 +31,8 @@ public sealed class Service
     public bool IsActive { get; set; } = true;
 
     public DateTimeOffset LastStatusChangedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    public ICollection<ServiceStatusHistory> StatusHistory { get; init; } = new List<ServiceStatusHistory>();
+
+    public ICollection<ServiceComment> Comments { get; init; } = new List<ServiceComment>();
 }

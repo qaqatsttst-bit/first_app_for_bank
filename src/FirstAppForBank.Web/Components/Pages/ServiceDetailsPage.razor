@@ -53,13 +53,57 @@ else
     </section>
 
     <section class="details-card">
-        <h2>Что дальше в V1</h2>
-        <ul>
-            <li>история статусов;</li>
-            <li>комментарии по сервису;</li>
-            <li>динамика метрик за 24 часа, 7 дней и 30 дней;</li>
-            <li>связанные диагностические инструменты.</li>
-        </ul>
+        <h2>История статусов</h2>
+        @if (_service.StatusHistory.Count == 0)
+        {
+            <p>История статусов пока отсутствует.</p>
+        }
+        else
+        {
+            <div class="timeline-list">
+                @foreach (var item in _service.StatusHistory)
+                {
+                    <div class="timeline-item">
+                        <div class="timeline-meta">
+                            <strong>@item.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</strong>
+                            <span>@item.ChangeSourceType</span>
+                        </div>
+                        <div class="timeline-content">
+                            <div>
+                                <span class="status-chip status-@((item.OldStatus ?? "unknown").ToLowerInvariant())">@(item.OldStatus ?? "N/A")</span>
+                                <span class="timeline-arrow">→</span>
+                                <span class="status-chip status-@item.NewStatus.ToLowerInvariant()">@item.NewStatus</span>
+                            </div>
+                            <p>@item.Comment</p>
+                            <small>Источник: @item.ChangeSource</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="details-card">
+        <h2>Комментарии</h2>
+        @if (_service.Comments.Count == 0)
+        {
+            <p>Комментариев пока нет.</p>
+        }
+        else
+        {
+            <div class="comment-list">
+                @foreach (var comment in _service.Comments)
+                {
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <strong>@comment.AuthorName</strong>
+                            <span>@comment.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        <p>@comment.CommentText</p>
+                    </div>
+                }
+            </div>
+        }
     </section>
 
     <button class="back-button" @onclick="GoBack">Вернуться к каталогу</button>

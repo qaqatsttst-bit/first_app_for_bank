@@ -86,7 +86,9 @@ body {
 }
 
 .service-card-header,
-.details-header {
+.details-header,
+.comment-header,
+.timeline-meta {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -179,6 +181,39 @@ body {
 .links-list {
     margin: 0;
     padding-left: 20px;
+}
+
+.timeline-list,
+.comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.timeline-item,
+.comment-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px;
+    background: #f9fafb;
+}
+
+.timeline-meta,
+.comment-header {
+    margin-bottom: 8px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.timeline-content p,
+.comment-item p {
+    margin: 8px 0;
+}
+
+.timeline-arrow {
+    display: inline-block;
+    margin: 0 6px;
+    color: #6b7280;
 }
 
 @media (max-width: 900px) {
