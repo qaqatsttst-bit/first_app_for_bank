@@ -1,4 +1,5 @@
 using FirstAppForBank.Application.Services;
+using FirstAppForBank.Infrastructure.Options;
 using FirstAppForBank.Infrastructure.Persistence;
 using FirstAppForBank.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,23 @@ public static class DependencyInjection
     {
         var usePostgres = configuration.GetValue<bool>("Infrastructure:UsePostgres");
         var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        services.Configure<PrometheusOptions>(configuration.GetSection("Prometheus"));
+        services.AddHttpClient<PrometheusMetricHistoryReader>((serviceProvider, client) =>
+        {
+            var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PrometheusOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(Math.Max(1, options.TimeoutSeconds));
+        });
+
+        var usePrometheus = configuration.GetValue<bool>("Prometheus:Enabled") && !string.IsNullOrWhiteSpace(configuration["Prometheus:BaseUrl"]);
+        if (usePrometheus)
+        {
+            services.AddScoped<IMetricHistoryReader, PrometheusMetricHistoryReader>();
+        }
+        else
+        {
+            services.AddSingleton<IMetricHistoryReader, InMemoryMetricHistoryReader>();
+        }
 
         if (!usePostgres || string.IsNullOrWhiteSpace(connectionString))
         {

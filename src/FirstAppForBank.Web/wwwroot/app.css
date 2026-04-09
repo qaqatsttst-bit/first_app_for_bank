@@ -57,7 +57,8 @@ body {
 
 .summary-grid,
 .service-grid,
-.details-grid {
+.details-grid,
+.metric-series-grid {
     display: grid;
     gap: 16px;
 }
@@ -68,13 +69,15 @@ body {
 }
 
 .service-grid,
-.details-grid {
+.details-grid,
+.metric-series-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .summary-card,
 .service-card,
-.details-card {
+.details-card,
+.metric-series-card {
     background: #fff;
     border-radius: 16px;
     padding: 18px;
@@ -88,7 +91,9 @@ body {
 .service-card-header,
 .details-header,
 .comment-header,
-.timeline-meta {
+.timeline-meta,
+.metrics-header,
+.metric-series-title-row {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -97,7 +102,8 @@ body {
 
 .service-card h3,
 .details-header h1,
-.details-card h2 {
+.details-card h2,
+.metric-series-card h3 {
     margin-top: 0;
 }
 
@@ -216,6 +222,61 @@ body {
     color: #6b7280;
 }
 
+.range-switcher {
+    display: flex;
+    gap: 8px;
+}
+
+.range-button {
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.range-button.active {
+    background: #1d4ed8;
+    color: #fff;
+    border-color: #1d4ed8;
+}
+
+.metric-summary-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.metric-summary-label,
+.metric-footnote {
+    display: block;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.mini-chart {
+    height: 120px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    margin: 14px 0 8px;
+}
+
+.mini-bar-wrapper {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.mini-bar {
+    width: 100%;
+    background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+    border-radius: 6px 6px 0 0;
+    min-height: 8px;
+}
+
 @media (max-width: 900px) {
     .shell {
         grid-template-columns: 1fr;
@@ -223,7 +284,9 @@ body {
 
     .summary-grid,
     .service-grid,
-    .details-grid {
+    .details-grid,
+    .metric-series-grid,
+    .metric-summary-row {
         grid-template-columns: 1fr;
     }
 

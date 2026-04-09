@@ -38,6 +38,31 @@ app.MapGet("/api/services/{id:guid}", async (Guid id, IServiceCatalogReader read
     return service is null ? Results.NotFound() : Results.Ok(service);
 });
 
+app.MapGet("/api/services/{id:guid}/metrics", async (Guid id, string? range, IServiceCatalogReader catalogReader, IMetricHistoryReader metricReader, CancellationToken cancellationToken) =>
+{
+    var service = await catalogReader.GetServiceByIdAsync(id, cancellationToken);
+    if (service is null)
+    {
+        return Results.NotFound();
+    }
+
+    var metricsRange = ParseRange(range);
+    var metrics = await metricReader.GetMetricsAsync(service.Name, metricsRange, cancellationToken);
+    return Results.Ok(metrics);
+});
+
 app.Run();
+
+return;
+
+static MetricsRange ParseRange(string? range)
+{
+    return range?.ToLowerInvariant() switch
+    {
+        "7d" => MetricsRange.Last7Days,
+        "30d" => MetricsRange.Last30Days,
+        _ => MetricsRange.Last24Hours
+    };
+}
 
 public partial class Program;
