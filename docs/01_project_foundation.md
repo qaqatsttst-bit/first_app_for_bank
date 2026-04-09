@@ -131,6 +131,7 @@
 В расширенную первую версию дополнительно могут входить:
 - базовые экраны пользователей и ролей;
 - минимальный административный раздел;
+- admin/data-quality экран;
 - отображение runbook/dashboard ссылок;
 - базовая синхронизация пользователей с внешним источником;
 - интервал метрик 30d при наличии достаточного retention в Prometheus.
@@ -241,7 +242,7 @@
 - менять `criticality` и `service_type`;
 - менять category и интеграционные ключи сервиса;
 - работать с административными настройками приложения;
-- видеть экраны `Users`, `Roles`, system diagnostics и audit.
+- видеть экраны `Users`, `Roles`, system diagnostics, audit и data-quality views.
 
 ### 9.6. Дополнительное правило
 Полная детальная permission-matrix должна быть оформлена в отдельном документе `05_role_permission_matrix.md`, но текущего уровня уже достаточно для старта проектирования access model.
@@ -507,17 +508,29 @@ Mapping:
 ### 12.18. Error contract for invalid payload
 Для invalid whole payload backend должен фиксировать отдельную integration error сущность/событие уровня:
 
+- `event_type`
 - `error_code`
 - `integration_name`
 - `received_at`
+- `severity`
 - `reason`
-- `raw_payload_reference` или trace reference
+- `details`
+- `raw_payload_reference`
 - `is_retryable`
+- `correlation_id`
+
+Для V1 базовый `event_type`:
+- `integration_error`
 
 Для V1 базовый `error_code`:
 - `STATUS_SOURCE_INVALID_PAYLOAD`
 
-### 12.19. Что ещё нужно уточнить позже
+### 12.19. Formal contract artifacts
+Для V1 должны существовать:
+- человекочитаемое описание контракта в `02_solution_design.md`;
+- отдельный machine-readable schema-файл рядом с solution design, например `contracts/status_source.bulk.v1.schema.json`.
+
+### 12.20. Что ещё нужно уточнить позже
 Отдельным документом должны быть формально зафиксированы:
 - переходы между статусами;
 - детальный контракт авторитетного status source;
@@ -608,7 +621,8 @@ Summary counts должны показываться по всем пяти ст
 - services without owner не выводятся полным списком на главной;
 - integration issues показываются как проблемы интеграций, а не повторяющиеся списки сервисов;
 - один и тот же сервис может логически относиться к нескольким quality-состояниям, но UI главной должен минимизировать избыточное дублирование;
-- problem list имеет приоритет над stale list при визуальной дедупликации.
+- problem list имеет приоритет над stale list при визуальной дедупликации;
+- если сервис уже показан как full row в problem list, stale block не должен повторять его как full row.
 
 ### 14.3. Карточка сервиса
 Карточка должна показывать:
@@ -658,6 +672,8 @@ Summary counts должны показываться по всем пяти ст
 - `error_rate` — обязательна там, где applicable;
 - `latency` — обязательна там, где applicable.
 
+Для `Provider` достаточной обязательной метрикой является `availability`.
+
 Наличие live data по всем applicable metrics не является обязательным условием activation, если:
 - wiring настроен корректно;
 - `metrics_source_key` заполнен;
@@ -690,6 +706,8 @@ Summary counts должны показываться по всем пяти ст
 Все запросы должны строиться через `metrics_source_key`.  
 Разные страницы не должны использовать ad hoc query logic для одной и той же метрики.
 
+Точные PromQL templates должны быть формально закреплены в `07_prometheus_metrics_dynamics.md`.
+
 ### 14.7.5. Metric wiring acceptance checks
 Для V1 acceptance по metric wiring должен подтверждать:
 - наличие `metrics_source_key` у active service;
@@ -718,7 +736,8 @@ Summary counts должны показываться по всем пяти ст
 
 Если `planned_end_at` заполнен и уже прошёл, а maintenance всё ещё активно, интерфейс должен показывать marker `overdue maintenance`.
 
-Внутри maintenance block overdue maintenance должны сортироваться выше обычных maintenance записей.
+Внутри maintenance block overdue maintenance должны сортироваться выше обычных maintenance записей.  
+В summary overdue maintenance остаётся частью общего `Maintenance`, а не выделяется в отдельный глобальный статус.
 
 ---
 
@@ -874,6 +893,35 @@ UI, прикладная логика и интеграции не должны 
 Основная бизнес-валидация activation и административных операций живёт в **Application layer**.  
 Domain layer может защищать локальные инварианты сущности, но orchestration и полная проверка activation выполняются на уровне Application layer.
 
+### 18.6. Validation failure API shape
+Для V1 validation failure должен возвращаться в едином structured shape:
+
+    {
+      "error_code": "VALIDATION_FAILED",
+      "message": "Service activation failed",
+      "errors": [
+        {
+          "error_code": "SERVICE_OWNER_REQUIRED",
+          "field": "owner",
+          "message": "Active service must have an owner"
+        }
+      ],
+      "correlation_id": "..."
+    }
+
+Обязательные поля верхнего уровня:
+- `error_code`
+- `message`
+- `errors`
+
+Желательное поле:
+- `correlation_id`
+
+У каждой конкретной ошибки:
+- `error_code`
+- `field` nullable
+- `message`
+
 ---
 
 ## 19. Модель данных
@@ -1023,7 +1071,8 @@ Category может быть деактивирована, если в ней б
 В Full V1 дополнительно могут входить:
 - базовый экран пользователей;
 - базовый экран ролей;
-- минимальный административный раздел.
+- минимальный административный раздел;
+- admin/data-quality экран.
 
 ### 20.2. UI states
 Для ключевых страниц должны быть предусмотрены:
@@ -1076,6 +1125,18 @@ Category может быть деактивирована, если в ней б
 ### 20.4.7. Draft visibility
 Draft не показывается в основном каталоге.  
 Draft виден только в административных сценариях и admin UI.
+
+### 20.4.8. Category issue presentation
+Для draft category issue показывается как мягкий warning.  
+Для active service category issue показывается как жёсткий configuration/data-quality issue.
+
+### 20.4.9. Admin data-quality view
+В Full V1 должен существовать admin/data-quality экран, где видны:
+- draft без category;
+- draft в `Uncategorized`;
+- category issues;
+- owner issues;
+- другие configuration/data-quality проблемы.
 
 ### 20.5. Доступ
 Страницы и действия на страницах должны скрываться и блокироваться согласно role model.
@@ -1223,7 +1284,8 @@ Draft виден только в административных сценари
 - коды ошибок;
 - способ получения данных по одному сервису и по множеству сервисов;
 - versioning и strict validation details;
-- JSON Schema как формальное приложение к solution design.
+- JSON Schema как формальное приложение к solution design;
+- machine-readable contract artifacts рядом с `02_solution_design.md`.
 
 ### 25.3. Детализированное UI-поведение для stale cases
 Нужно формально зафиксировать:
@@ -1261,7 +1323,8 @@ Draft виден только в административных сценари
 - для каких типов сервисов `latency` считается applicable;
 - для каких типов сервисов `error_rate` считается applicable;
 - как фиксировать `Not applicable` в модели данных и UI;
-- canonical query templates в `07_prometheus_metrics_dynamics.md`.
+- canonical query templates в `07_prometheus_metrics_dynamics.md`;
+- applicability matrix как документационное правило и как централизованное code mapping.
 
 ### 25.10. Activation error contract
 Нужно окончательно формализовать structured validation errors для activation, включая:
