@@ -490,20 +490,40 @@ Mapping:
 - отсутствие обязательных полей верхнего уровня;
 - structurally invalid payload, при котором нельзя доверять всему ответу.
 
+Допустимый `clock skew` для `status_timestamp`:
+- до **2 минут** вперёд относительно времени backend;
+- больше этого окна считается invalid item.
+
 Правило обработки:
 - валидные item обрабатываются;
+- невалидные item логируются отдельно на уровне item;
+- invalid whole payload логируется отдельно как integration-level error;
 - невалидные или отсутствующие item не обновляются;
 - по ним дальше работает stale-policy;
 - unknown `external_status`, которого нет в allowlist, считается invalid item;
 - `status_timestamp` в неправильном формате считается invalid item;
-- `status_timestamp`, выходящий вперёд сверх допустимого небольшого clock skew, считается invalid item.
+- `status_timestamp`, выходящий вперёд сверх допустимого clock skew, считается invalid item.
 
-### 12.18. Что ещё нужно уточнить позже
+### 12.18. Error contract for invalid payload
+Для invalid whole payload backend должен фиксировать отдельную integration error сущность/событие уровня:
+
+- `error_code`
+- `integration_name`
+- `received_at`
+- `reason`
+- `raw_payload_reference` или trace reference
+- `is_retryable`
+
+Для V1 базовый `error_code`:
+- `STATUS_SOURCE_INVALID_PAYLOAD`
+
+### 12.19. Что ещё нужно уточнить позже
 Отдельным документом должны быть формально зафиксированы:
 - переходы между статусами;
 - детальный контракт авторитетного status source;
 - полный набор полей ответа status source;
-- exact mapping external statuses to internal statuses.
+- exact mapping external statuses to internal statuses;
+- JSON Schema и versioning rules.
 
 ---
 
@@ -576,6 +596,8 @@ Summary counts должны показываться по всем пяти ст
 2. по severity статуса (`Down` > `Degraded` > `Unknown`);
 3. по времени последнего изменения по убыванию.
 
+`Down + confirmed problem` должен иметь повышенный visual priority по сравнению с обычным `Down`.
+
 Блок проблемных сервисов показывает **top 10** записей.  
 Блок stale / unknown services показывает **top 10** записей.  
 Блок integration issues показывает **top 10** записей по интеграциям.  
@@ -585,7 +607,8 @@ Summary counts должны показываться по всем пяти ст
 Правило минимизации дублей:
 - services without owner не выводятся полным списком на главной;
 - integration issues показываются как проблемы интеграций, а не повторяющиеся списки сервисов;
-- один и тот же сервис может логически относиться к нескольким quality-состояниям, но UI главной должен минимизировать избыточное дублирование одних и тех же строк.
+- один и тот же сервис может логически относиться к нескольким quality-состояниям, но UI главной должен минимизировать избыточное дублирование;
+- problem list имеет приоритет над stale list при визуальной дедупликации.
 
 ### 14.3. Карточка сервиса
 Карточка должна показывать:
@@ -658,6 +681,23 @@ Summary counts должны показываться по всем пяти ст
 Для V1 rules by `service_type` считаются достаточными.  
 Отдельный metadata flag applicability не требуется.
 
+### 14.7.4. Canonical metric queries
+Для V1 должен существовать единый набор canonical query templates для:
+- availability;
+- error rate;
+- latency.
+
+Все запросы должны строиться через `metrics_source_key`.  
+Разные страницы не должны использовать ad hoc query logic для одной и той же метрики.
+
+### 14.7.5. Metric wiring acceptance checks
+Для V1 acceptance по metric wiring должен подтверждать:
+- наличие `metrics_source_key` у active service;
+- корректное определение applicability по `service_type`;
+- корректное различение `Not applicable`, `No data / Unavailable` и normal data;
+- использование canonical query templates;
+- отсутствие блокировки activation только из-за отсутствия live metric data.
+
 ### 14.8. Категории
 Система должна поддерживать просмотр и редактирование категорий административными ролями.
 
@@ -677,6 +717,8 @@ Summary counts должны показываться по всем пяти ст
 Система должна поддерживать перевод сервиса в `Maintenance` административной ролью с обязательной фиксацией причины.
 
 Если `planned_end_at` заполнен и уже прошёл, а maintenance всё ещё активно, интерфейс должен показывать marker `overdue maintenance`.
+
+Внутри maintenance block overdue maintenance должны сортироваться выше обычных maintenance записей.
 
 ---
 
@@ -962,6 +1004,10 @@ Partial draft допустим: сервис можно сохранять в dr
 - `is_system = true`
 - и/или `category_code = UNCATEGORIZED`
 
+### 19.19. Category deactivation policy
+Category может быть деактивирована, если в ней больше нет active services.  
+Исторические и inactive записи сохраняют связь с неактивной category как с историческим объектом.
+
 ---
 
 ## 20. Страницы и навигация
@@ -1026,6 +1072,10 @@ Partial draft допустим: сервис можно сохранять в dr
 ### 20.4.6. Category data-quality issue
 Если у сервиса невалидная category для его состояния, карточка должна показывать warning о category data-quality issue.  
 В MVP это не требует отдельного большого блока на главной.
+
+### 20.4.7. Draft visibility
+Draft не показывается в основном каталоге.  
+Draft виден только в административных сценариях и admin UI.
 
 ### 20.5. Доступ
 Страницы и действия на страницах должны скрываться и блокироваться согласно role model.
@@ -1172,7 +1222,8 @@ Partial draft допустим: сервис можно сохранять в dr
 - обязательные поля;
 - коды ошибок;
 - способ получения данных по одному сервису и по множеству сервисов;
-- versioning и strict validation details.
+- versioning и strict validation details;
+- JSON Schema как формальное приложение к solution design.
 
 ### 25.3. Детализированное UI-поведение для stale cases
 Нужно формально зафиксировать:
@@ -1209,7 +1260,8 @@ Partial draft допустим: сервис можно сохранять в dr
 Нужно окончательно формализовать:
 - для каких типов сервисов `latency` считается applicable;
 - для каких типов сервисов `error_rate` считается applicable;
-- как фиксировать `Not applicable` в модели данных и UI.
+- как фиксировать `Not applicable` в модели данных и UI;
+- canonical query templates в `07_prometheus_metrics_dynamics.md`.
 
 ### 25.10. Activation error contract
 Нужно окончательно формализовать structured validation errors для activation, включая:
@@ -1223,6 +1275,8 @@ Partial draft допустим: сервис можно сохранять в dr
 - `SERVICE_CRITICALITY_REQUIRED`
 - `SERVICE_TYPE_REQUIRED`
 - `SERVICE_ALREADY_ACTIVE`
+
+Нужно закрепить и exact API shape ответа validation failure.
 
 ---
 
