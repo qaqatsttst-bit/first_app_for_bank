@@ -106,6 +106,8 @@ public sealed class InMemoryAdministrationCatalogService(InMemoryCatalogStore st
                 return null;
             }
 
+            var previousStatus = service.CurrentStatus;
+
             service.Name = request.Name.Trim();
             service.CategoryId = request.CategoryId;
             service.Description = request.Description?.Trim();
@@ -116,8 +118,93 @@ public sealed class InMemoryAdministrationCatalogService(InMemoryCatalogStore st
             service.IsActive = request.IsActive;
             service.LastStatusChangedAt = DateTimeOffset.UtcNow;
 
+            if (previousStatus != request.Status)
+            {
+                if (!store.StatusHistory.TryGetValue(service.Id, out var history))
+                {
+                    history = [];
+                    store.StatusHistory[service.Id] = history;
+                }
+
+                history.Add(new ServiceStatusHistoryItemDto
+                {
+                    OldStatus = previousStatus.ToString(),
+                    NewStatus = request.Status.ToString(),
+                    ChangeSource = "Administration",
+                    ChangeSourceType = "manual",
+                    Comment = "Статус изменен из раздела управления сервисами.",
+                    ChangedAt = DateTimeOffset.UtcNow
+                });
+            }
+
             var categories = store.Categories.ToDictionary(x => x.Id, x => x.Name);
             return MapService(service, categories);
+        });
+
+        return Task.FromResult(result);
+    }
+
+    public Task<ServiceCommentDto?> AddCommentAsync(Guid serviceId, AddServiceCommentRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = store.ExecuteLocked(() =>
+        {
+            if (!store.Services.Any(x => x.Id == serviceId))
+            {
+                return null;
+            }
+
+            if (!store.Comments.TryGetValue(serviceId, out var comments))
+            {
+                comments = [];
+                store.Comments[serviceId] = comments;
+            }
+
+            var comment = new ServiceCommentDto
+            {
+                AuthorName = request.AuthorName.Trim(),
+                CommentText = request.CommentText.Trim(),
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            comments.Add(comment);
+            return comment;
+        });
+
+        return Task.FromResult(result);
+    }
+
+    public Task<ServiceStatusHistoryItemDto?> ChangeStatusAsync(Guid serviceId, ChangeServiceStatusRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = store.ExecuteLocked(() =>
+        {
+            var service = store.Services.FirstOrDefault(x => x.Id == serviceId);
+            if (service is null)
+            {
+                return null;
+            }
+
+            if (!store.StatusHistory.TryGetValue(serviceId, out var history))
+            {
+                history = [];
+                store.StatusHistory[serviceId] = history;
+            }
+
+            var previousStatus = service.CurrentStatus;
+            service.CurrentStatus = request.NewStatus;
+            service.LastStatusChangedAt = DateTimeOffset.UtcNow;
+
+            var item = new ServiceStatusHistoryItemDto
+            {
+                OldStatus = previousStatus.ToString(),
+                NewStatus = request.NewStatus.ToString(),
+                ChangeSource = request.ChangeSource,
+                ChangeSourceType = request.ChangeSourceType,
+                Comment = request.Comment?.Trim(),
+                ChangedAt = service.LastStatusChangedAt
+            };
+
+            history.Add(item);
+            return item;
         });
 
         return Task.FromResult(result);

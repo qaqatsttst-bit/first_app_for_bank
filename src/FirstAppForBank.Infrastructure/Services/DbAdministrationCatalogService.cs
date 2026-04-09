@@ -1,4 +1,5 @@
 using FirstAppForBank.Application.Services;
+using FirstAppForBank.Domain.Models;
 using FirstAppForBank.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,7 +46,7 @@ public sealed class DbAdministrationCatalogService(AppDbContext dbContext) : IAd
 
     public async Task<CategoryAdminDto> CreateCategoryAsync(UpsertCategoryRequest request, CancellationToken cancellationToken = default)
     {
-        var category = new Domain.Models.Category
+        var category = new Category
         {
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
@@ -90,7 +91,7 @@ public sealed class DbAdministrationCatalogService(AppDbContext dbContext) : IAd
 
     public async Task<ServiceAdminDto> CreateServiceAsync(UpsertServiceRequest request, CancellationToken cancellationToken = default)
     {
-        var service = new Domain.Models.Service
+        var service = new Service
         {
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
@@ -132,6 +133,8 @@ public sealed class DbAdministrationCatalogService(AppDbContext dbContext) : IAd
             return null;
         }
 
+        var previousStatus = service.CurrentStatus;
+
         service.Name = request.Name.Trim();
         service.CategoryId = request.CategoryId;
         service.Description = request.Description?.Trim();
@@ -141,6 +144,21 @@ public sealed class DbAdministrationCatalogService(AppDbContext dbContext) : IAd
         service.Owner = request.Owner?.Trim();
         service.IsActive = request.IsActive;
         service.LastStatusChangedAt = DateTimeOffset.UtcNow;
+
+        if (previousStatus != request.Status)
+        {
+            dbContext.ServiceStatusHistory.Add(new ServiceStatusHistory
+            {
+                Id = Guid.NewGuid(),
+                ServiceId = service.Id,
+                OldStatus = previousStatus,
+                NewStatus = request.Status,
+                ChangeSource = "Administration",
+                ChangeSourceType = "manual",
+                Comment = "Статус изменен из раздела управления сервисами.",
+                ChangedAt = service.LastStatusChangedAt
+            });
+        }
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -158,6 +176,72 @@ public sealed class DbAdministrationCatalogService(AppDbContext dbContext) : IAd
             Status = service.CurrentStatus,
             Owner = service.Owner,
             IsActive = service.IsActive
+        };
+    }
+
+    public async Task<ServiceCommentDto?> AddCommentAsync(Guid serviceId, AddServiceCommentRequest request, CancellationToken cancellationToken = default)
+    {
+        var serviceExists = await dbContext.Services.AnyAsync(x => x.Id == serviceId, cancellationToken);
+        if (!serviceExists)
+        {
+            return null;
+        }
+
+        var comment = new ServiceComment
+        {
+            Id = Guid.NewGuid(),
+            ServiceId = serviceId,
+            AuthorName = request.AuthorName.Trim(),
+            CommentText = request.CommentText.Trim(),
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        dbContext.ServiceComments.Add(comment);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ServiceCommentDto
+        {
+            AuthorName = comment.AuthorName,
+            CommentText = comment.CommentText,
+            CreatedAt = comment.CreatedAt
+        };
+    }
+
+    public async Task<ServiceStatusHistoryItemDto?> ChangeStatusAsync(Guid serviceId, ChangeServiceStatusRequest request, CancellationToken cancellationToken = default)
+    {
+        var service = await dbContext.Services.FirstOrDefaultAsync(x => x.Id == serviceId, cancellationToken);
+        if (service is null)
+        {
+            return null;
+        }
+
+        var previousStatus = service.CurrentStatus;
+        service.CurrentStatus = request.NewStatus;
+        service.LastStatusChangedAt = DateTimeOffset.UtcNow;
+
+        var item = new ServiceStatusHistory
+        {
+            Id = Guid.NewGuid(),
+            ServiceId = serviceId,
+            OldStatus = previousStatus,
+            NewStatus = request.NewStatus,
+            ChangeSource = request.ChangeSource,
+            ChangeSourceType = request.ChangeSourceType,
+            Comment = request.Comment?.Trim(),
+            ChangedAt = service.LastStatusChangedAt
+        };
+
+        dbContext.ServiceStatusHistory.Add(item);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ServiceStatusHistoryItemDto
+        {
+            OldStatus = previousStatus.ToString(),
+            NewStatus = request.NewStatus.ToString(),
+            ChangeSource = item.ChangeSource,
+            ChangeSourceType = item.ChangeSourceType,
+            Comment = item.Comment,
+            ChangedAt = item.ChangedAt
         };
     }
 }

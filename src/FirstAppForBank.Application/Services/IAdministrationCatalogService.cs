@@ -13,4 +13,8 @@ public interface IAdministrationCatalogService
     Task<ServiceAdminDto> CreateServiceAsync(UpsertServiceRequest request, CancellationToken cancellationToken = default);
 
     Task<ServiceAdminDto?> UpdateServiceAsync(Guid serviceId, UpsertServiceRequest request, CancellationToken cancellationToken = default);
+
+    Task<ServiceCommentDto?> AddCommentAsync(Guid serviceId, AddServiceCommentRequest request, CancellationToken cancellationToken = default);
+
+    Task<ServiceStatusHistoryItemDto?> ChangeStatusAsync(Guid serviceId, ChangeServiceStatusRequest request, CancellationToken cancellationToken = default);
 }

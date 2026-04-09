@@ -58,7 +58,8 @@ body {
 .summary-grid,
 .service-grid,
 .details-grid,
-.metric-series-grid {
+.metric-series-grid,
+.admin-grid {
     display: grid;
     gap: 16px;
 }
@@ -70,7 +71,8 @@ body {
 
 .service-grid,
 .details-grid,
-.metric-series-grid {
+.metric-series-grid,
+.admin-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -93,7 +95,8 @@ body {
 .comment-header,
 .timeline-meta,
 .metrics-header,
-.metric-series-title-row {
+.metric-series-title-row,
+.admin-list-item {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -190,14 +193,16 @@ body {
 }
 
 .timeline-list,
-.comment-list {
+.comment-list,
+.admin-list {
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
 .timeline-item,
-.comment-item {
+.comment-item,
+.admin-list-item {
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 14px;
@@ -205,12 +210,14 @@ body {
 }
 
 .timeline-meta,
-.comment-header {
+.comment-header,
+.admin-list-meta {
     margin-bottom: 8px;
     color: #6b7280;
     font-size: 14px;
 }
 
+.admin-list-text,
 .timeline-content p,
 .comment-item p {
     margin: 8px 0;
@@ -222,23 +229,50 @@ body {
     color: #6b7280;
 }
 
-.range-switcher {
+.range-switcher,
+.form-actions {
     display: flex;
     gap: 8px;
 }
 
-.range-button {
+.range-button,
+.primary-button,
+.secondary-button {
     border: 1px solid #cbd5e1;
     background: #fff;
     border-radius: 999px;
-    padding: 6px 12px;
+    padding: 8px 14px;
     cursor: pointer;
 }
 
-.range-button.active {
+.range-button.active,
+.primary-button {
     background: #1d4ed8;
     color: #fff;
     border-color: #1d4ed8;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+}
+
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
 }
 
 .metric-summary-row {
@@ -286,7 +320,8 @@ body {
     .service-grid,
     .details-grid,
     .metric-series-grid,
-    .metric-summary-row {
+    .metric-summary-row,
+    .admin-grid {
         grid-template-columns: 1fr;
     }
 

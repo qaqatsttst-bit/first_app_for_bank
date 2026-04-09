@@ -2,6 +2,7 @@
 @layout MainLayout
 @inject IServiceCatalogReader ServiceCatalogReader
 @inject IMetricHistoryReader MetricHistoryReader
+@inject IAdministrationCatalogService AdministrationCatalogService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Карточка сервиса</PageTitle>
@@ -26,16 +27,11 @@ else
         <article class="details-card">
             <h2>Общая информация</h2>
             <dl>
-                <dt>Категория</dt>
-                <dd>@_service.Category</dd>
-                <dt>Критичность</dt>
-                <dd>@_service.Criticality</dd>
-                <dt>Тип</dt>
-                <dd>@_service.ServiceType</dd>
-                <dt>Владелец</dt>
-                <dd>@_service.Owner</dd>
-                <dt>Последнее изменение статуса</dt>
-                <dd>@_service.LastStatusChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd>
+                <dt>Категория</dt><dd>@_service.Category</dd>
+                <dt>Критичность</dt><dd>@_service.Criticality</dd>
+                <dt>Тип</dt><dd>@_service.ServiceType</dd>
+                <dt>Владелец</dt><dd>@_service.Owner</dd>
+                <dt>Последнее изменение статуса</dt><dd>@_service.LastStatusChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd>
             </dl>
         </article>
 
@@ -46,6 +42,23 @@ else
                 <li><a href="@_service.DashboardUrl" target="_blank">Dashboard</a></li>
             </ul>
             <p class="notes-block">@_service.Notes</p>
+        </article>
+    </section>
+
+    <section class="details-grid">
+        <article class="details-card admin-form-card">
+            <h2>Добавить комментарий</h2>
+            <div class="form-field"><label>Автор</label><input @bind="_commentAuthor" /></div>
+            <div class="form-field"><label>Комментарий</label><textarea rows="4" @bind="_commentText"></textarea></div>
+            <div class="form-actions"><button class="primary-button" @onclick="AddCommentAsync">Сохранить комментарий</button></div>
+        </article>
+
+        <article class="details-card admin-form-card">
+            <h2>Ручная смена статуса</h2>
+            <div class="form-field"><label>Новый статус</label><select @bind="_manualStatusString">@foreach (var item in Enum.GetValues<ServiceStatus>()) { <option value="@item.ToString()">@item</option> }</select></div>
+            <div class="form-field"><label>Источник</label><input @bind="_changeSource" /></div>
+            <div class="form-field"><label>Комментарий</label><textarea rows="4" @bind="_statusComment"></textarea></div>
+            <div class="form-actions"><button class="primary-button" @onclick="ChangeStatusAsync">Изменить статус</button></div>
         </article>
     </section>
 
@@ -69,11 +82,7 @@ else
                 @foreach (var series in _metrics.Series)
                 {
                     <article class="metric-series-card">
-                        <div class="metric-series-title-row">
-                            <h3>@series.DisplayName</h3>
-                            <span>@series.Unit</span>
-                        </div>
-
+                        <div class="metric-series-title-row"><h3>@series.DisplayName</h3><span>@series.Unit</span></div>
                         @if (series.Points.Count == 0)
                         {
                             <p>Нет данных за выбранный интервал.</p>
@@ -81,32 +90,17 @@ else
                         else
                         {
                             <div class="metric-summary-row">
-                                <div>
-                                    <span class="metric-summary-label">Текущее</span>
-                                    <strong>@FormatMetricValue(series.Points.Last().Value, series.Unit)</strong>
-                                </div>
-                                <div>
-                                    <span class="metric-summary-label">Min</span>
-                                    <strong>@FormatMetricValue(series.Points.Min(x => x.Value), series.Unit)</strong>
-                                </div>
-                                <div>
-                                    <span class="metric-summary-label">Max</span>
-                                    <strong>@FormatMetricValue(series.Points.Max(x => x.Value), series.Unit)</strong>
-                                </div>
+                                <div><span class="metric-summary-label">Текущее</span><strong>@FormatMetricValue(series.Points.Last().Value, series.Unit)</strong></div>
+                                <div><span class="metric-summary-label">Min</span><strong>@FormatMetricValue(series.Points.Min(x => x.Value), series.Unit)</strong></div>
+                                <div><span class="metric-summary-label">Max</span><strong>@FormatMetricValue(series.Points.Max(x => x.Value), series.Unit)</strong></div>
                             </div>
-
                             <div class="mini-chart">
                                 @foreach (var point in series.Points)
                                 {
-                                    <div class="mini-bar-wrapper">
-                                        <div class="mini-bar" style="height:@GetBarHeight(point.Value, series.Points)%"></div>
-                                    </div>
+                                    <div class="mini-bar-wrapper"><div class="mini-bar" style="height:@GetBarHeight(point.Value, series.Points)%"></div></div>
                                 }
                             </div>
-
-                            <div class="metric-footnote">
-                                Последняя точка: @series.Points.Last().Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                            </div>
+                            <div class="metric-footnote">Последняя точка: @series.Points.Last().Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
                         }
                     </article>
                 }
@@ -126,16 +120,9 @@ else
                 @foreach (var item in _service.StatusHistory)
                 {
                     <div class="timeline-item">
-                        <div class="timeline-meta">
-                            <strong>@item.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</strong>
-                            <span>@item.ChangeSourceType</span>
-                        </div>
+                        <div class="timeline-meta"><strong>@item.ChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</strong><span>@item.ChangeSourceType</span></div>
                         <div class="timeline-content">
-                            <div>
-                                <span class="status-chip status-@((item.OldStatus ?? "unknown").ToLowerInvariant())">@(item.OldStatus ?? "N/A")</span>
-                                <span class="timeline-arrow">→</span>
-                                <span class="status-chip status-@item.NewStatus.ToLowerInvariant()">@item.NewStatus</span>
-                            </div>
+                            <div><span class="status-chip status-@((item.OldStatus ?? "unknown").ToLowerInvariant())">@(item.OldStatus ?? "N/A")</span><span class="timeline-arrow">→</span><span class="status-chip status-@item.NewStatus.ToLowerInvariant()">@item.NewStatus</span></div>
                             <p>@item.Comment</p>
                             <small>Источник: @item.ChangeSource</small>
                         </div>
@@ -157,10 +144,7 @@ else
                 @foreach (var comment in _service.Comments)
                 {
                     <div class="comment-item">
-                        <div class="comment-header">
-                            <strong>@comment.AuthorName</strong>
-                            <span>@comment.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
-                        </div>
+                        <div class="comment-header"><strong>@comment.AuthorName</strong><span>@comment.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span></div>
                         <p>@comment.CommentText</p>
                     </div>
                 }
@@ -172,62 +156,63 @@ else
 }
 
 @code {
-    [Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 
     private ServiceDetailsDto? _service;
     private ServiceMetricsDto? _metrics;
     private MetricsRange _selectedRange = MetricsRange.Last24Hours;
+    private string _commentAuthor = "Оператор";
+    private string _commentText = string.Empty;
+    private string _manualStatusString = ServiceStatus.Unknown.ToString();
+    private string _changeSource = "UI";
+    private string _statusComment = string.Empty;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
         _service = await ServiceCatalogReader.GetServiceByIdAsync(Id);
-
         if (_service is not null)
         {
+            _manualStatusString = _service.Status;
             _metrics = await MetricHistoryReader.GetMetricsAsync(_service.Name, _selectedRange);
         }
     }
 
+    private async Task AddCommentAsync()
+    {
+        if (_service is null || string.IsNullOrWhiteSpace(_commentAuthor) || string.IsNullOrWhiteSpace(_commentText)) return;
+        await AdministrationCatalogService.AddCommentAsync(Id, new AddServiceCommentRequest { AuthorName = _commentAuthor, CommentText = _commentText });
+        _commentText = string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task ChangeStatusAsync()
+    {
+        if (_service is null) return;
+        await AdministrationCatalogService.ChangeStatusAsync(Id, new ChangeServiceStatusRequest { NewStatus = Enum.Parse<ServiceStatus>(_manualStatusString), Comment = _statusComment, ChangeSource = _changeSource, ChangeSourceType = "manual" });
+        _statusComment = string.Empty;
+        await LoadAsync();
+    }
+
     private async Task ChangeRangeAsync(MetricsRange range)
     {
-        if (_service is null)
-        {
-            return;
-        }
-
+        if (_service is null) return;
         _selectedRange = range;
         _metrics = await MetricHistoryReader.GetMetricsAsync(_service.Name, _selectedRange);
     }
 
-    private string RangeButtonClass(MetricsRange range)
-    {
-        return _selectedRange == range ? "range-button active" : "range-button";
-    }
+    private string RangeButtonClass(MetricsRange range) => _selectedRange == range ? "range-button active" : "range-button";
 
-    private static string FormatMetricValue(double value, string unit)
-    {
-        return unit switch
-        {
-            "%" => $"{value:F2}%",
-            _ => $"{value:F2} {unit}"
-        };
-    }
+    private static string FormatMetricValue(double value, string unit) => unit switch { "%" => $"{value:F2}%", _ => $"{value:F2} {unit}" };
 
     private static double GetBarHeight(double value, IReadOnlyCollection<MetricPointDto> points)
     {
         var max = points.Max(x => x.Value);
-        if (max <= 0)
-        {
-            return 5;
-        }
-
+        if (max <= 0) return 5;
         var height = value / max * 100;
         return Math.Max(8, Math.Round(height, 2));
     }
 
-    private void GoBack()
-    {
-        NavigationManager.NavigateTo("/services");
-    }
+    private void GoBack() => NavigationManager.NavigateTo("/services");
 }
