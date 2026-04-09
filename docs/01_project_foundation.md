@@ -528,9 +528,9 @@ Mapping:
 ### 12.19. Formal contract artifacts
 Для V1 должны существовать:
 - человекочитаемое описание контракта в `02_solution_design.md`;
-- отдельный machine-readable schema-файл рядом с solution design, например `contracts/status_source.bulk.v1.schema.json`.
+- отдельный machine-readable schema-файл рядом с solution design, например `docs/contracts/status_source.bulk.v1.schema.json`.
 
-### 12.20. Что ещё нужно уточнить позже
+### 12.20. What remains to formalize later
 Отдельным документом должны быть формально зафиксированы:
 - переходы между статусами;
 - детальный контракт авторитетного status source;
@@ -922,6 +922,39 @@ Domain layer может защищать локальные инварианты
 - `field` nullable
 - `message`
 
+### 18.7. Validation message catalog
+Для V1 фиксируется следующий базовый каталог validation messages:
+
+- `SERVICE_OWNER_REQUIRED`  
+  `Active service must have an owner`
+
+- `SERVICE_CATEGORY_REQUIRED`  
+  `Active service must have a category`
+
+- `SERVICE_CATEGORY_UNCATEGORIZED_NOT_ALLOWED`  
+  `Active service cannot use Uncategorized category`
+
+- `SERVICE_KEY_REQUIRED`  
+  `Active service must have service_key`
+
+- `SERVICE_SLUG_REQUIRED`  
+  `Active service must have slug`
+
+- `SERVICE_STATUS_SOURCE_KEY_REQUIRED`  
+  `Active service must have status_source_key`
+
+- `SERVICE_METRICS_SOURCE_KEY_REQUIRED`  
+  `Active service must have metrics_source_key`
+
+- `SERVICE_CRITICALITY_REQUIRED`  
+  `Active service must have criticality`
+
+- `SERVICE_TYPE_REQUIRED`  
+  `Active service must have service_type`
+
+- `SERVICE_ALREADY_ACTIVE`  
+  `Service is already active`
+
 ---
 
 ## 19. Модель данных
@@ -1136,6 +1169,9 @@ Draft виден только в административных сценари
 - draft в `Uncategorized`;
 - category issues;
 - owner issues;
+- missing integration keys;
+- services with metrics wiring issue;
+- unhealthy integrations;
 - другие configuration/data-quality проблемы.
 
 ### 20.5. Доступ
