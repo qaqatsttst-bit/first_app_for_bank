@@ -1,0 +1,116 @@
+@page "/admin/services"
+@layout MainLayout
+@inject IAdministrationCatalogService AdminService
+
+<PageTitle>Manage Services</PageTitle>
+
+<h1>Управление сервисами</h1>
+
+@if (_services is null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <section class="admin-grid">
+        <article class="details-card admin-form-card">
+            <h2>@(_editingId is null ? "Новый сервис" : "Редактирование сервиса")</h2>
+            <div class="form-field"><label>Название</label><input @bind="_name" /></div>
+            <div class="form-field"><label>Категория</label><select @bind="_categoryIdString">@foreach (var category in _categories) { <option value="@category.Id">@category.Name</option> }</select></div>
+            <div class="form-field"><label>Описание</label><textarea rows="4" @bind="_description"></textarea></div>
+            <div class="form-field"><label>Критичность</label><select @bind="_criticalityString">@foreach (var item in Enum.GetValues<ServiceCriticality>()) { <option value="@item.ToString()">@item</option> }</select></div>
+            <div class="form-field"><label>Тип</label><select @bind="_serviceTypeString">@foreach (var item in Enum.GetValues<ServiceType>()) { <option value="@item.ToString()">@item</option> }</select></div>
+            <div class="form-field"><label>Статус</label><select @bind="_statusString">@foreach (var item in Enum.GetValues<ServiceStatus>()) { <option value="@item.ToString()">@item</option> }</select></div>
+            <div class="form-field"><label>Владелец</label><input @bind="_owner" /></div>
+            <label class="checkbox-field"><input type="checkbox" @bind="_isActive" /><span>Активен</span></label>
+            <div class="form-actions">
+                <button class="primary-button" @onclick="SaveAsync">@(_editingId is null ? "Создать" : "Сохранить")</button>
+                @if (_editingId is not null) { <button class="secondary-button" @onclick="ResetForm">Отмена</button> }
+            </div>
+        </article>
+        <article class="details-card">
+            <h2>Список сервисов</h2>
+            <div class="admin-list">
+                @foreach (var service in _services)
+                {
+                    <div class="admin-list-item">
+                        <div>
+                            <strong>@service.Name</strong>
+                            <div class="admin-list-meta">@service.CategoryName · @service.Status · @service.Criticality</div>
+                            <div class="admin-list-text">@service.Owner</div>
+                        </div>
+                        <button class="secondary-button" @onclick="() => StartEdit(service)">Редактировать</button>
+                    </div>
+                }
+            </div>
+        </article>
+    </section>
+}
+
+@code {
+    private IReadOnlyCollection<ServiceAdminDto>? _services;
+    private IReadOnlyCollection<CategoryAdminDto> _categories = Array.Empty<CategoryAdminDto>();
+    private Guid? _editingId;
+    private string _name = string.Empty;
+    private string _categoryIdString = string.Empty;
+    private string? _description;
+    private string _criticalityString = ServiceCriticality.Medium.ToString();
+    private string _serviceTypeString = ServiceType.Internal.ToString();
+    private string _statusString = ServiceStatus.Unknown.ToString();
+    private string? _owner;
+    private bool _isActive = true;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _categories = await AdminService.GetCategoriesAsync();
+        _services = await AdminService.GetServicesAsync();
+        if (string.IsNullOrWhiteSpace(_categoryIdString) && _categories.Count > 0) _categoryIdString = _categories.First().Id.ToString();
+    }
+
+    private async Task SaveAsync()
+    {
+        var request = new UpsertServiceRequest
+        {
+            Name = _name,
+            CategoryId = Guid.Parse(_categoryIdString),
+            Description = _description,
+            Criticality = Enum.Parse<ServiceCriticality>(_criticalityString),
+            ServiceType = Enum.Parse<ServiceType>(_serviceTypeString),
+            Status = Enum.Parse<ServiceStatus>(_statusString),
+            Owner = _owner,
+            IsActive = _isActive
+        };
+
+        if (_editingId is null) await AdminService.CreateServiceAsync(request); else await AdminService.UpdateServiceAsync(_editingId.Value, request);
+        ResetForm();
+        await LoadAsync();
+    }
+
+    private void StartEdit(ServiceAdminDto service)
+    {
+        _editingId = service.Id;
+        _name = service.Name;
+        _categoryIdString = service.CategoryId.ToString();
+        _description = service.Description;
+        _criticalityString = service.Criticality.ToString();
+        _serviceTypeString = service.ServiceType.ToString();
+        _statusString = service.Status.ToString();
+        _owner = service.Owner;
+        _isActive = service.IsActive;
+    }
+
+    private void ResetForm()
+    {
+        _editingId = null;
+        _name = string.Empty;
+        _description = string.Empty;
+        _criticalityString = ServiceCriticality.Medium.ToString();
+        _serviceTypeString = ServiceType.Internal.ToString();
+        _statusString = ServiceStatus.Unknown.ToString();
+        _owner = string.Empty;
+        _isActive = true;
+        _categoryIdString = _categories.FirstOrDefault()?.Id.ToString() ?? string.Empty;
+    }
+}

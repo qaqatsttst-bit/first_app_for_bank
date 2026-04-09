@@ -34,12 +34,15 @@ public static class DependencyInjection
 
         if (!usePostgres || string.IsNullOrWhiteSpace(connectionString))
         {
+            services.AddSingleton<InMemoryCatalogStore>();
             services.AddSingleton<IServiceCatalogReader, InMemoryServiceCatalogReader>();
+            services.AddSingleton<IAdministrationCatalogService, InMemoryAdministrationCatalogService>();
             return services;
         }
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IServiceCatalogReader, DbServiceCatalogReader>();
+        services.AddScoped<IAdministrationCatalogService, DbAdministrationCatalogService>();
         services.AddScoped<AppDbContextSeed>();
 
         return services;

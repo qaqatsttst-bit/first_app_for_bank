@@ -2,142 +2,66 @@ using FirstAppForBank.Application.Services;
 
 namespace FirstAppForBank.Infrastructure.Services;
 
-public sealed class InMemoryServiceCatalogReader : IServiceCatalogReader
+public sealed class InMemoryServiceCatalogReader(InMemoryCatalogStore store) : IServiceCatalogReader
 {
-    private static readonly IReadOnlyCollection<ServiceDetailsDto> Services =
-    [
-        new ServiceDetailsDto
-        {
-            Id = Guid.Parse("11111111-aaaa-bbbb-cccc-111111111111"),
-            Name = "KoronaPay",
-            Category = "External Payments",
-            Description = "Внешний платежный сервис для обработки операций по международным и внешним направлениям.",
-            Status = "Ok",
-            Criticality = "Critical",
-            ServiceType = "External",
-            Owner = "Payments Team",
-            RunbookUrl = "https://runbook.local/koronapay",
-            DashboardUrl = "https://grafana.local/koronapay",
-            Notes = "Сервис критичен для внешнего платежного контура.",
-            LastStatusChangedAt = DateTimeOffset.UtcNow.AddMinutes(-12),
-            StatusHistory =
-            [
-                new ServiceStatusHistoryItemDto
-                {
-                    OldStatus = "Degraded",
-                    NewStatus = "Ok",
-                    ChangeSource = "Prometheus",
-                    ChangeSourceType = "integration",
-                    Comment = "Метрики стабилизировались, error rate вернулся к норме.",
-                    ChangedAt = DateTimeOffset.UtcNow.AddMinutes(-12)
-                }
-            ],
-            Comments =
-            [
-                new ServiceCommentDto
-                {
-                    AuthorName = "Алексей Иванов",
-                    CommentText = "Проверили внешний контур, сервис работает штатно после кратковременной деградации.",
-                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-10)
-                }
-            ]
-        },
-        new ServiceDetailsDto
-        {
-            Id = Guid.Parse("22222222-aaaa-bbbb-cccc-222222222222"),
-            Name = "Payment Routing",
-            Category = "Internal Payment Core",
-            Description = "Внутренний сервис маршрутизации платежей между системами банка и внешними шлюзами.",
-            Status = "Degraded",
-            Criticality = "High",
-            ServiceType = "Internal",
-            Owner = "Core Banking Team",
-            RunbookUrl = "https://runbook.local/payment-routing",
-            DashboardUrl = "https://grafana.local/payment-routing",
-            Notes = "Наблюдается рост latency и нестабильность части запросов.",
-            LastStatusChangedAt = DateTimeOffset.UtcNow.AddMinutes(-27),
-            StatusHistory =
-            [
-                new ServiceStatusHistoryItemDto
-                {
-                    OldStatus = "Ok",
-                    NewStatus = "Degraded",
-                    ChangeSource = "Alertmanager",
-                    ChangeSourceType = "integration",
-                    Comment = "Сработал алерт по росту latency на критическом маршруте.",
-                    ChangedAt = DateTimeOffset.UtcNow.AddMinutes(-27)
-                }
-            ],
-            Comments =
-            [
-                new ServiceCommentDto
-                {
-                    AuthorName = "Мария Петрова",
-                    CommentText = "Нужно проверить узкий участок маршрутизации и сравнить динамику за последние 30 минут.",
-                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-20)
-                }
-            ]
-        },
-        new ServiceDetailsDto
-        {
-            Id = Guid.Parse("33333333-aaaa-bbbb-cccc-333333333333"),
-            Name = "Fraud Check Gateway",
-            Category = "Risk & Control",
-            Description = "Интеграционный сервис, отвечающий за передачу платежных событий в контур антифрода.",
-            Status = "Unknown",
-            Criticality = "High",
-            ServiceType = "Integration",
-            Owner = "Risk Platform Team",
-            RunbookUrl = "https://runbook.local/fraud-check",
-            DashboardUrl = "https://grafana.local/fraud-check",
-            Notes = "Последнее обновление сигналов устарело, требуется проверка источника данных.",
-            LastStatusChangedAt = DateTimeOffset.UtcNow.AddHours(-2),
-            StatusHistory =
-            [
-                new ServiceStatusHistoryItemDto
-                {
-                    OldStatus = "Ok",
-                    NewStatus = "Unknown",
-                    ChangeSource = "System",
-                    ChangeSourceType = "system",
-                    Comment = "Источник телеметрии временно не отвечает, данные считаются устаревшими.",
-                    ChangedAt = DateTimeOffset.UtcNow.AddHours(-2)
-                }
-            ],
-            Comments =
-            [
-                new ServiceCommentDto
-                {
-                    AuthorName = "Дежурный инженер",
-                    CommentText = "Ожидаем восстановление сигнала от внешнего источника, инцидент пока не подтвержден как Down.",
-                    CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-95)
-                }
-            ]
-        }
-    ];
-
     public Task<IReadOnlyCollection<ServiceCardDto>> GetServicesAsync(CancellationToken cancellationToken = default)
     {
-        var cards = Services
-            .Select(service => new ServiceCardDto
-            {
-                Id = service.Id,
-                Name = service.Name,
-                Category = service.Category,
-                Status = service.Status,
-                Criticality = service.Criticality,
-                ServiceType = service.ServiceType,
-                Owner = service.Owner,
-                LastStatusChangedAt = service.LastStatusChangedAt
-            })
-            .ToArray();
+        var result = store.ExecuteLocked(() =>
+        {
+            var categories = store.Categories.ToDictionary(x => x.Id, x => x.Name);
+            return (IReadOnlyCollection<ServiceCardDto>)store.Services
+                .OrderBy(x => categories.TryGetValue(x.CategoryId, out var category) ? category : string.Empty)
+                .ThenBy(x => x.Name)
+                .Select(service => new ServiceCardDto
+                {
+                    Id = service.Id,
+                    Name = service.Name,
+                    Category = categories.TryGetValue(service.CategoryId, out var categoryName) ? categoryName : "Uncategorized",
+                    Status = service.CurrentStatus.ToString(),
+                    Criticality = service.Criticality.ToString(),
+                    ServiceType = service.ServiceType.ToString(),
+                    Owner = service.Owner,
+                    LastStatusChangedAt = service.LastStatusChangedAt
+                })
+                .ToArray();
+        });
 
-        return Task.FromResult<IReadOnlyCollection<ServiceCardDto>>(cards);
+        return Task.FromResult(result);
     }
 
     public Task<ServiceDetailsDto?> GetServiceByIdAsync(Guid serviceId, CancellationToken cancellationToken = default)
     {
-        var service = Services.FirstOrDefault(x => x.Id == serviceId);
-        return Task.FromResult(service);
+        var result = store.ExecuteLocked(() =>
+        {
+            var service = store.Services.FirstOrDefault(x => x.Id == serviceId);
+            if (service is null)
+            {
+                return null;
+            }
+
+            var categoryName = store.Categories.FirstOrDefault(x => x.Id == service.CategoryId)?.Name ?? "Uncategorized";
+            store.StatusHistory.TryGetValue(service.Id, out var history);
+            store.Comments.TryGetValue(service.Id, out var comments);
+
+            return new ServiceDetailsDto
+            {
+                Id = service.Id,
+                Name = service.Name,
+                Category = categoryName,
+                Description = service.Description ?? string.Empty,
+                Status = service.CurrentStatus.ToString(),
+                Criticality = service.Criticality.ToString(),
+                ServiceType = service.ServiceType.ToString(),
+                Owner = service.Owner,
+                RunbookUrl = service.RunbookUrl,
+                DashboardUrl = service.DashboardUrl,
+                Notes = service.Notes,
+                LastStatusChangedAt = service.LastStatusChangedAt,
+                StatusHistory = (history ?? []).OrderByDescending(x => x.ChangedAt).ToArray(),
+                Comments = (comments ?? []).OrderByDescending(x => x.CreatedAt).ToArray()
+            };
+        });
+
+        return Task.FromResult(result);
     }
 }
