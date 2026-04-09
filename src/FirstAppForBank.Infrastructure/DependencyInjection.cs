@@ -11,9 +11,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        var usePostgres = configuration.GetValue<bool>("Infrastructure:UsePostgres");
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        if (string.IsNullOrWhiteSpace(connectionString))
+        if (!usePostgres || string.IsNullOrWhiteSpace(connectionString))
         {
             services.AddSingleton<IServiceCatalogReader, InMemoryServiceCatalogReader>();
             return services;
@@ -36,7 +37,7 @@ public static class DependencyInjection
             return;
         }
 
-        await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+        await dbContext.Database.MigrateAsync(cancellationToken);
 
         var seed = scope.ServiceProvider.GetRequiredService<AppDbContextSeed>();
         await seed.SeedAsync(cancellationToken);
