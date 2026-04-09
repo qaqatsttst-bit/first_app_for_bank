@@ -241,7 +241,7 @@
 - просматривать timeline;
 - просматривать комментарии;
 - просматривать service links;
-- просматривать метрики.
+- просматривать metrics и role-safe diagnostics subset.
 
 Не может:
 - изменять справочные данные;
@@ -257,7 +257,7 @@
 - добавлять комментарии к любому сервису;
 - подтверждать проблемную ситуацию;
 - отзывать подтверждение проблемы;
-- просматривать сервисные диагностические ссылки;
+- просматривать service links и diagnostics;
 - работать с эксплуатационным контекстом.
 
 Не может:
@@ -1453,7 +1453,7 @@ Draft виден только в административных сценари
 - missing integration keys;
 - services with metrics wiring issue;
 - unhealthy integrations;
-- other configuration/data-quality проблемы.
+- другие configuration/data-quality проблемы.
 
 ---
 
