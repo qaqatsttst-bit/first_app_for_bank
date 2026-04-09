@@ -1004,7 +1004,7 @@ Bootstrap-механизм действует только до появлени
 
 ### 16.8.2. MVP-управление ролями без административных экранов
 
-Если экраны `Users`, `Roles` и минимальный административный раздел относятся к Full V1, в MVP управление ролями выполняется только через ограниченный серверный административный сценарий без публичного UI.
+Если экраны `Users`, `Roles` и минимальный административный раздел относятся к Full V1, в MVP управление ролями и иные административные изменения выполняются только через ограниченный серверный административный сценарий без публичного UI.
 
 Канонический перечень допустимых backend-only administrative flows для V1:
 - `controlled seed`;
@@ -1012,9 +1012,20 @@ Bootstrap-механизм действует только до появлени
 - `migration-assisted assignment`;
 - эквивалентный backend-only controlled operational runbook.
 
-Любые backend-only administrative flows, изменяющие роли, ownership, category, activation/deactivation, service metadata, integration keys, `Maintenance` или service links, обязаны оставлять audit trail.
+Любые backend-only administrative flows, изменяющие:
+- роли;
+- ownership;
+- category;
+- activation/deactivation;
+- service metadata;
+- integration keys;
+- `Maintenance`;
+- service links;
+- redaction/correction comments,
 
-Отсутствие UI-экранов управления пользователями и ролями в MVP не отменяет обязательность серверного enforcement всех access rules.
+обязаны оставлять audit trail.
+
+Отсутствие UI-экранов управления пользователями и ролями в MVP не отменяет обязательность серверного enforcement всех access rules и прикладного аудита значимых административных действий.
 
 ### 16.9. Минимальные OIDC-требования
 
