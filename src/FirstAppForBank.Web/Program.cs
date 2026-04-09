@@ -1,5 +1,5 @@
 using FirstAppForBank.Application.Services;
-using FirstAppForBank.Infrastructure.Services;
+using FirstAppForBank.Infrastructure;
 using FirstAppForBank.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,9 +8,11 @@ builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddSingleton<IServiceCatalogReader, InMemoryServiceCatalogReader>();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+await app.Services.InitializeInfrastructureAsync();
 
 app.UseStaticFiles();
 app.UseAntiforgery();

@@ -9,4 +9,6 @@ public sealed class Category
     public string? Description { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public ICollection<Service> Services { get; init; } = new List<Service>();
 }
