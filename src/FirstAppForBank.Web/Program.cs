@@ -1,24 +1,39 @@
 using FirstAppForBank.Application.Services;
 using FirstAppForBank.Infrastructure.Services;
+using FirstAppForBank.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddRazorComponents()
+    .AddInteractiveServerComponents();
 
 builder.Services.AddSingleton<IServiceCatalogReader, InMemoryServiceCatalogReader>();
 
 var app = builder.Build();
 
-app.MapGet("/", () => Results.Redirect("/health"));
+app.UseStaticFiles();
+app.UseAntiforgery();
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "ok",
-    application = "FirstAppForBank.Web"
+    application = "Manage MegaPayment Service"
 }));
 
 app.MapGet("/api/services", async (IServiceCatalogReader reader, CancellationToken cancellationToken) =>
 {
     var services = await reader.GetServicesAsync(cancellationToken);
     return Results.Ok(services);
+});
+
+app.MapGet("/api/services/{id:guid}", async (Guid id, IServiceCatalogReader reader, CancellationToken cancellationToken) =>
+{
+    var service = await reader.GetServiceByIdAsync(id, cancellationToken);
+    return service is null ? Results.NotFound() : Results.Ok(service);
 });
 
 app.Run();

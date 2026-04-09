@@ -1,0 +1,83 @@
+@page "/services/{Id:guid}"
+@layout MainLayout
+@inject IServiceCatalogReader ServiceCatalogReader
+@inject NavigationManager NavigationManager
+
+<PageTitle>Карточка сервиса</PageTitle>
+
+@if (_service is null)
+{
+    <p>Сервис не найден.</p>
+    <button class="back-button" @onclick="GoBack">Вернуться к каталогу</button>
+}
+else
+{
+    <div class="details-header">
+        <div>
+            <p class="breadcrumbs"><a href="/services">Каталог</a> / @_service.Category</p>
+            <h1>@_service.Name</h1>
+            <p class="page-description">@_service.Description</p>
+        </div>
+        <span class="status-chip status-@_service.Status.ToLowerInvariant()">@_service.Status</span>
+    </div>
+
+    <section class="details-grid">
+        <article class="details-card">
+            <h2>Общая информация</h2>
+            <dl>
+                <dt>Категория</dt>
+                <dd>@_service.Category</dd>
+
+                <dt>Критичность</dt>
+                <dd>@_service.Criticality</dd>
+
+                <dt>Тип</dt>
+                <dd>@_service.ServiceType</dd>
+
+                <dt>Владелец</dt>
+                <dd>@_service.Owner</dd>
+
+                <dt>Последнее изменение статуса</dt>
+                <dd>@_service.LastStatusChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd>
+            </dl>
+        </article>
+
+        <article class="details-card">
+            <h2>Ссылки и материалы</h2>
+            <ul class="links-list">
+                <li><a href="@_service.RunbookUrl" target="_blank">Runbook</a></li>
+                <li><a href="@_service.DashboardUrl" target="_blank">Dashboard</a></li>
+            </ul>
+            <p class="notes-block">@_service.Notes</p>
+        </article>
+    </section>
+
+    <section class="details-card">
+        <h2>Что дальше в V1</h2>
+        <ul>
+            <li>история статусов;</li>
+            <li>комментарии по сервису;</li>
+            <li>динамика метрик за 24 часа, 7 дней и 30 дней;</li>
+            <li>связанные диагностические инструменты.</li>
+        </ul>
+    </section>
+
+    <button class="back-button" @onclick="GoBack">Вернуться к каталогу</button>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ServiceDetailsDto? _service;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _service = await ServiceCatalogReader.GetServiceByIdAsync(Id);
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/services");
+    }
+}

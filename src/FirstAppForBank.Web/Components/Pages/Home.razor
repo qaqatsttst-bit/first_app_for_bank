@@ -1,0 +1,75 @@
+@page "/"
+@page "/services"
+@layout MainLayout
+@inject IServiceCatalogReader ServiceCatalogReader
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1>Каталог сервисов</h1>
+<p class="page-description">Минимальный V1-срез: обзор сервисов, их текущего состояния и быстрый переход к карточке сервиса.</p>
+
+@if (_services is null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <section class="summary-grid">
+        <div class="summary-card">
+            <span class="summary-label">Всего сервисов</span>
+            <strong>@_services.Count</strong>
+        </div>
+        <div class="summary-card">
+            <span class="summary-label">Проблемные</span>
+            <strong>@_services.Count(x => x.Status is "Degraded" or "Down")</strong>
+        </div>
+        <div class="summary-card">
+            <span class="summary-label">Unknown</span>
+            <strong>@_services.Count(x => x.Status == "Unknown")</strong>
+        </div>
+    </section>
+
+    @foreach (var group in _services.GroupBy(x => x.Category).OrderBy(x => x.Key))
+    {
+        <section class="category-block">
+            <h2>@group.Key</h2>
+
+            <div class="service-grid">
+                @foreach (var service in group.OrderBy(x => x.Name))
+                {
+                    <article class="service-card">
+                        <div class="service-card-header">
+                            <h3>@service.Name</h3>
+                            <span class="status-chip status-@service.Status.ToLowerInvariant()">@service.Status</span>
+                        </div>
+
+                        <dl>
+                            <dt>Критичность</dt>
+                            <dd>@service.Criticality</dd>
+
+                            <dt>Тип</dt>
+                            <dd>@service.ServiceType</dd>
+
+                            <dt>Владелец</dt>
+                            <dd>@service.Owner</dd>
+
+                            <dt>Последнее изменение</dt>
+                            <dd>@service.LastStatusChangedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd>
+                        </dl>
+
+                        <a class="details-link" href="/services/@service.Id">Открыть карточку</a>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    private IReadOnlyCollection<ServiceCardDto>? _services;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _services = await ServiceCatalogReader.GetServicesAsync();
+    }
+}
