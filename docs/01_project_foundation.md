@@ -18,7 +18,17 @@
 
 Этот документ является **главным source of truth для product scope, core business rules и solution constraints верхнего уровня**.
 
-Этот документ **не должен** становиться местом хранения низкоуровневых деталей реализации. Точные API-схемы, детальные permission matrices, data model diagrams, page-level UI-spec, PromQL templates и иные low-level artifacts должны выноситься в дочерние документы.
+В этом документе **не должны** храниться:
+
+- exact API contracts;
+- DB schema details;
+- page-level UI spec;
+- exact JSON examples;
+- PromQL templates;
+- validation message catalogs;
+- другие low-level implementation artifacts.
+
+Такие материалы должны выноситься в дочерние документы.
 
 ---
 
@@ -99,7 +109,7 @@
 - базовые метрики;
 - эксплуатационный контекст.
 
-Система должна уменьшить время первичного анализа, сделать сервисный контур прозрачнее и снизить зависимость от локальных знаний отдельных сотрудников.
+Система должна уменьшить **time-to-first-understanding** по сервису, сделать сервисный контур прозрачнее и снизить зависимость от разрозненных источников контекста и локальных знаний отдельных сотрудников.
 
 ---
 
@@ -336,6 +346,8 @@
 - `status_source_key` — внешний ключ сопоставления с authoritative status source;
 - `metrics_source_key` — внешний ключ сопоставления с Prometheus/metrics wiring.
 
+Для draft service допускается временное отсутствие части обязательных полей и integration keys.
+
 ### 10.11. Decision о комментариях
 
 В V1 комментарии считаются append-only. Обычные роли не редактируют и не удаляют уже созданные комментарии.
@@ -425,7 +437,7 @@
 
 - основной источник `current_status` — внутренний HTTP API источника состояния сервисов;
 - обновление выполняется централизованно backend-слоем;
-- основной режим получения данных — bulk endpoint по активным сервисам;
+- основной режим получения данных — bulk endpoint по active services;
 - Prometheus используется как источник метрик и динамики, но не является основным источником истины по текущему статусу;
 - если authoritative status source недоступен или его данные устарели, сервис переводится в `Unknown` по stale-policy.
 
@@ -512,7 +524,7 @@ Mapping фиксируется как решение V1:
 
 Для V1 наличие authoritative status source является обязательным.
 
-Сервис не может считаться полностью корректно подключённым к статусной модели V1 без `status_source_key`.
+Active service не может считаться полностью корректно подключённым к статусной модели V1 без `status_source_key`.
 
 ### 12.11. Приоритет Maintenance
 
@@ -570,9 +582,9 @@ Mapping фиксируется как решение V1:
 - статус по ним не затирается немедленно;
 - далее применяется индивидуальная stale-policy.
 
-### 12.18. Ошибки интеграции status source
+### 12.18. Классы ошибок интеграции status source
 
-Для V1 различаются:
+Для V1 различаются следующие классы ошибок:
 
 - `transport error`;
 - `partial response`;
@@ -580,7 +592,7 @@ Mapping фиксируется как решение V1:
 - `unknown external status`;
 - `invalid timestamp`.
 
-Точные коды и low-level validation rules фиксируются в solution design и contract artifacts.
+Точные коды, strict validation rules и low-level error payloads фиксируются в `11_error_handling_and_degraded_mode.md` и contract artifacts.
 
 ---
 
@@ -697,7 +709,8 @@ Draft-сервисы в этот блок не попадают.
 - комментарии;
 - метрики;
 - `last_successful_status_refresh_at`;
-- `last_successful_metrics_refresh_at`.
+- `last_successful_metrics_refresh_at`;
+- integration diagnostics marker при наличии проблем.
 
 ### 14.4. История статусов
 
@@ -742,12 +755,10 @@ Draft-сервисы в этот блок не попадают.
 Для V1 принимается следующий базовый набор:
 
 - `availability` — обязательна для всех active services;
-- `throughput` / `request volume` — обязательна там, где applicable;
-- `error_rate` — обязательна там, где applicable;
-- `latency_p95` — обязательна там, где applicable.
+- `error_rate` — обязательна для `Internal`, `External`, `Integration`;
+- `latency_p95` — обязательна для `Internal`, `External`, `Integration`.
 
-Для `Provider` обязательной считается `availability`.
-Остальные метрики для `Provider` по умолчанию считаются `Not applicable`, если иное явно не зафиксировано.
+Для `Provider` обязательной считается только `availability`.
 
 Наличие live data по всем applicable metrics не является обязательным условием activation, если:
 
@@ -770,8 +781,8 @@ Draft-сервисы в этот блок не попадают.
 Базовое правило для V1:
 
 - `availability` applicable для всех `service_type`;
-- `throughput`, `error_rate` и `latency_p95` applicable для `Internal`, `External`, `Integration`;
-- для `Provider` `throughput`, `error_rate` и `latency_p95` считаются `Not applicable`, если не доказано обратное в отдельном решении.
+- `error_rate` и `latency_p95` applicable для `Internal`, `External`, `Integration`;
+- для `Provider` `error_rate` и `latency_p95` считаются `Not applicable`, если иное явно не зафиксировано в отдельном решении.
 
 Для V1 достаточно rules by `service_type`.
 Отдельный metadata flag applicability не требуется.
@@ -781,14 +792,13 @@ Draft-сервисы в этот блок не попадают.
 Для V1 должен существовать единый набор canonical query templates для:
 
 - availability;
-- throughput / request volume;
 - error rate;
 - latency_p95.
 
 Все запросы строятся через `metrics_source_key`.
 Разные страницы не должны использовать ad hoc query logic для одной и той же метрики.
 
-Точные PromQL templates должны быть закреплены в `07_prometheus_metrics_dynamics.md`.
+Точные PromQL templates и label names должны быть закреплены в `07_prometheus_metrics_dynamics.md`.
 
 ### 14.8. Категории
 
@@ -844,7 +854,8 @@ V1 считается готовой, если:
 - При отсутствии или устаревании status source сервис переводится в `Unknown`.
 - Пользователь без локальной роли не получает доступ к системе.
 - В системе существует bootstrap-механизм назначения первого администратора.
-- Active service без owner не может быть активирован.
+- Active service не может быть активирован без owner.
+- Потеря owner у уже active service считается data-quality violation и должна быть видна в UI и admin views.
 - Active service без `service_key`, `slug`, валидной category, `status_source_key`, `metrics_source_key`, `criticality` и `service_type` не может быть переведён в active.
 - Active service не может быть активирован в `Uncategorized`.
 
@@ -904,7 +915,7 @@ V1 считается готовой, если:
 - `preferred_username`;
 - group-like claims, если они доступны.
 
-Конкретные значения `issuer`, allowed domains и allowed groups являются environment-specific configuration и фиксируются в `02_solution_design.md` и конфигурации окружения, а не в этом файле.
+Конкретные значения `issuer`, allowed domains, allowed groups и другие environment-specific OIDC settings фиксируются в `02_solution_design.md` и конфигурации окружения, а не в этом файле.
 
 ---
 
@@ -956,6 +967,8 @@ V1 не должна пытаться дублировать весь observabil
 
 - время последнего успешного обновления из status source;
 - время последнего успешного обновления из metrics source.
+
+Эти timestamps используются как диагностические поля сервиса и должны быть доступны в карточке сервиса и в admin/data-quality diagnostics.
 
 ### 17.8. Каноническое правило mapping
 
@@ -1014,24 +1027,9 @@ UI, прикладная логика и интеграции не должны 
 
 ### 18.6. Validation failures
 
-Для V1 activation и иные административные операции должны возвращать единый structured validation result с machine-readable `error_code` и списком конкретных нарушений.
+Для V1 activation и иные административные операции должны возвращать structured validation result с machine-readable `error_code`.
 
-Точный API-shape фиксируется в `02_solution_design.md`.
-
-### 18.7. Минимальный каталог validation codes
-
-Для activation должны существовать как минимум следующие коды:
-
-- `SERVICE_OWNER_REQUIRED`
-- `SERVICE_CATEGORY_REQUIRED`
-- `SERVICE_CATEGORY_UNCATEGORIZED_NOT_ALLOWED`
-- `SERVICE_KEY_REQUIRED`
-- `SERVICE_SLUG_REQUIRED`
-- `SERVICE_STATUS_SOURCE_KEY_REQUIRED`
-- `SERVICE_METRICS_SOURCE_KEY_REQUIRED`
-- `SERVICE_CRITICALITY_REQUIRED`
-- `SERVICE_TYPE_REQUIRED`
-- `SERVICE_ALREADY_ACTIVE`
+Точный API shape, validation payloads и catalog кодов фиксируются в `02_solution_design.md`.
 
 ---
 
@@ -1095,6 +1093,8 @@ UI, прикладная логика и интеграции не должны 
 
 Комментарии являются append-only, не удаляются обычными ролями и не используются как замена истории статусов.
 
+Emergency redaction/correction допустим только административным сценарием с обязательной записью в audit.
+
 ### 19.10. Обязательные служебные поля
 
 Для основных сущностей V1 должны быть предусмотрены:
@@ -1145,6 +1145,8 @@ UI, прикладная логика и интеграции не должны 
 
 Для внешнего authoritative status source используется `status_source_key`.
 
+Для внешнего metrics source используется `metrics_source_key`.
+
 ### 19.15. Service timeline events
 
 Для V1 минимально поддерживаются следующие типы `service_timeline_events`:
@@ -1183,7 +1185,9 @@ Draft-запись сервиса может временно не иметь:
 
 ### 19.18. Category classification
 
-Системная fallback category должна отличаться от обычных категорий системным признаком, а не только именем.
+Системная fallback category должна отличаться от обычных категорий системным признаком.
+
+Конкретная реализация этого признака фиксируется в `08_data_model.md`.
 
 ### 19.19. Category deactivation policy
 
@@ -1232,6 +1236,13 @@ Category может быть деактивирована, если в ней б
 - Comments;
 - Timeline;
 - Links / Diagnostics.
+
+Overview / Diagnostics должны показывать:
+
+- `last_successful_status_refresh_at`;
+- `last_successful_metrics_refresh_at`;
+- integration health marker;
+- stale indicator.
 
 ### 20.5. Дополнительные состояния интерфейса
 
@@ -1471,10 +1482,11 @@ Audit:
 Остаются только environment-specific и implementation-specific детали, которые должны быть закрыты в дочерних документах и конфигурации, например:
 
 - конкретное значение OIDC `issuer`;
+- exact UI wording и visual badges для stale/diagnostics indicators;
+- точные PromQL templates и label names;
 - точный JSON Schema для status source;
-- точные PromQL templates;
 - точный API shape structured validation errors;
-- page-level UI wording, badges и visual tokens.
+- другие machine-readable contract artifacts.
 
 Эти вопросы не должны переоткрывать решения, уже зафиксированные в настоящем документе.
 
@@ -1499,4 +1511,14 @@ Audit:
 Правило декомпозиции:
 
 - foundation фиксирует **что и почему**;
-- дочерние документы фиксируют **как именно**.
+- дочерние документы фиксируют **как именно**;
+- дочерние документы не переоткрывают решения foundation, а только детализируют их.
+
+Распределение ответственности между дочерними документами:
+
+- `02_solution_design.md` — contracts, validation/API shapes, integration flows;
+- `07_prometheus_metrics_dynamics.md` — canonical metric queries и PromQL;
+- `08_data_model.md` — schema-level сущности, поля и storage details;
+- `09_pages_and_navigation.md` — page composition, UI states и wording;
+- `10_non_functional_requirements.md` — расширенные NFR, performance, retention;
+- `11_error_handling_and_degraded_mode.md` — stale/error taxonomy и degraded behavior.
