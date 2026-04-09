@@ -362,6 +362,7 @@
 Для V1 bulk endpoint должен возвращать JSON следующей структуры:
 
     {
+      "version": "v1",
       "generated_at": "2026-04-09T10:00:00Z",
       "source_name": "service-status-api",
       "items": [
@@ -373,6 +374,12 @@
         }
       ]
     }
+
+Обязательные поля верхнего уровня:
+- `version`
+- `generated_at`
+- `source_name`
+- `items`
 
 Обязательные поля item:
 - `service_key`
@@ -478,10 +485,18 @@ Mapping:
 - но статусы пришли не по всем активным сервисам;
 - или часть item невалидны.
 
+`invalid whole payload` для V1:
+- duplicate `service_key` внутри одного bulk response;
+- отсутствие обязательных полей верхнего уровня;
+- structurally invalid payload, при котором нельзя доверять всему ответу.
+
 Правило обработки:
 - валидные item обрабатываются;
 - невалидные или отсутствующие item не обновляются;
-- по ним дальше работает stale-policy.
+- по ним дальше работает stale-policy;
+- unknown `external_status`, которого нет в allowlist, считается invalid item;
+- `status_timestamp` в неправильном формате считается invalid item;
+- `status_timestamp`, выходящий вперёд сверх допустимого небольшого clock skew, считается invalid item.
 
 ### 12.18. Что ещё нужно уточнить позже
 Отдельным документом должны быть формально зафиксированы:
@@ -562,8 +577,15 @@ Summary counts должны показываться по всем пяти ст
 3. по времени последнего изменения по убыванию.
 
 Блок проблемных сервисов показывает **top 10** записей.  
+Блок stale / unknown services показывает **top 10** записей.  
+Блок integration issues показывает **top 10** записей по интеграциям.  
 Блок `services without owner` в MVP показывает **счётчик + переход в список**.  
 Главная страница обновляется автоматически каждые **60 секунд** и дополнительно поддерживает ручной refresh.
+
+Правило минимизации дублей:
+- services without owner не выводятся полным списком на главной;
+- integration issues показываются как проблемы интеграций, а не повторяющиеся списки сервисов;
+- один и тот же сервис может логически относиться к нескольким quality-состояниям, но UI главной должен минимизировать избыточное дублирование одних и тех же строк.
 
 ### 14.3. Карточка сервиса
 Карточка должна показывать:
@@ -613,6 +635,11 @@ Summary counts должны показываться по всем пяти ст
 - `error_rate` — обязательна там, где applicable;
 - `latency` — обязательна там, где applicable.
 
+Наличие live data по всем applicable metrics не является обязательным условием activation, если:
+- wiring настроен корректно;
+- `metrics_source_key` заполнен;
+- UI корректно различает `Not applicable`, `No data`, `Unavailable`.
+
 ### 14.7.2. Not applicable vs No data
 Для V1 необходимо различать:
 - `Not applicable` — метрика по смыслу не используется для данного типа сервиса;
@@ -628,13 +655,20 @@ Summary counts должны показываться по всем пяти ст
 - `latency` applicable для `Internal`, `External`, `Integration`;
 - для `Provider` `error_rate` и `latency` считаются `Not applicable`.
 
+Для V1 rules by `service_type` считаются достаточными.  
+Отдельный metadata flag applicability не требуется.
+
 ### 14.8. Категории
 Система должна поддерживать просмотр и редактирование категорий административными ролями.
 
 Для V1 принимается:
 - существует системная fallback category `Uncategorized`;
+- fallback category должна определяться системным признаком, а не только display name;
 - draft-сервис может временно существовать без category или в `Uncategorized`;
-- active service не может быть переведён в состояние `Uncategorized`.
+- active service не может быть переведён в состояние `Uncategorized`;
+- active service не может быть активирован в `Uncategorized`.
+
+Если category отсутствует или невалидна для active service, карточка должна показывать data-quality warning.
 
 ### 14.9. Пользователи и роли
 Система должна поддерживать локальную роль-модель и использование внешнего корпоративного источника идентификации.
@@ -794,6 +828,10 @@ UI, прикладная логика и интеграции не должны 
 ### 18.4. Прикладной статус
 Нормализация `current_status` должна происходить вне UI и быть частью server-side application logic.
 
+### 18.5. Validation placement
+Основная бизнес-валидация activation и административных операций живёт в **Application layer**.  
+Domain layer может защищать локальные инварианты сущности, но orchestration и полная проверка activation выполняются на уровне Application layer.
+
 ---
 
 ## 19. Модель данных
@@ -901,7 +939,9 @@ Draft-запись сервиса может временно не иметь:
 - category;
 - integration keys.
 
-Для активного сервиса все эти поля обязательны.
+Partial draft допустим: сервис можно сохранять в draft-состоянии с незаполненной частью полей, пока он не переводится в active.
+
+Для активного сервиса все обязательные поля должны быть заполнены.
 
 ### 19.17. Activation Rules for Active Service
 Для active service обязательны:
@@ -915,6 +955,12 @@ Draft-запись сервиса может временно не иметь:
 - `service_type`.
 
 Сервис не может быть активирован в `Uncategorized`.
+
+### 19.18. Category classification
+Системная fallback category должна отличаться от обычных категорий системным признаком, а не только именем.  
+Например:
+- `is_system = true`
+- и/или `category_code = UNCATEGORIZED`
 
 ---
 
@@ -976,6 +1022,10 @@ Draft-запись сервиса может временно не иметь:
 
 ### 20.4.5. Missing mapping
 Если у сервиса отсутствуют integration keys, интерфейс должен показывать configuration issue, а не маскировать это под отсутствие данных.
+
+### 20.4.6. Category data-quality issue
+Если у сервиса невалидная category для его состояния, карточка должна показывать warning о category data-quality issue.  
+В MVP это не требует отдельного большого блока на главной.
 
 ### 20.5. Доступ
 Страницы и действия на страницах должны скрываться и блокироваться согласно role model.
@@ -1121,7 +1171,8 @@ Draft-запись сервиса может временно не иметь:
 - формат ответа status source;
 - обязательные поля;
 - коды ошибок;
-- способ получения данных по одному сервису и по множеству сервисов.
+- способ получения данных по одному сервису и по множеству сервисов;
+- versioning и strict validation details.
 
 ### 25.3. Детализированное UI-поведение для stale cases
 Нужно формально зафиксировать:
@@ -1159,6 +1210,19 @@ Draft-запись сервиса может временно не иметь:
 - для каких типов сервисов `latency` считается applicable;
 - для каких типов сервисов `error_rate` считается applicable;
 - как фиксировать `Not applicable` в модели данных и UI.
+
+### 25.10. Activation error contract
+Нужно окончательно формализовать structured validation errors для activation, включая:
+- `SERVICE_OWNER_REQUIRED`
+- `SERVICE_CATEGORY_REQUIRED`
+- `SERVICE_CATEGORY_UNCATEGORIZED_NOT_ALLOWED`
+- `SERVICE_KEY_REQUIRED`
+- `SERVICE_SLUG_REQUIRED`
+- `SERVICE_STATUS_SOURCE_KEY_REQUIRED`
+- `SERVICE_METRICS_SOURCE_KEY_REQUIRED`
+- `SERVICE_CRITICALITY_REQUIRED`
+- `SERVICE_TYPE_REQUIRED`
+- `SERVICE_ALREADY_ACTIVE`
 
 ---
 
