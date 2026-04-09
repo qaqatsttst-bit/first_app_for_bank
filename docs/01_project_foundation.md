@@ -452,7 +452,13 @@
 - список проблемных сервисов;
 - список сервисов в `Maintenance`;
 - список stale / integration issues;
+- блок сервисов без owner;
 - быстрый переход в каталог.
+
+Проблемные сервисы ранжируются:
+1. по `criticality` по убыванию;
+2. по severity статуса (`Down` > `Degraded` > `Unknown`);
+3. по времени последнего изменения по убыванию.
 
 ### 14.3. Карточка сервиса
 Карточка должна показывать:
@@ -650,7 +656,8 @@ UI, прикладная логика и интеграции не должны 
 - `service_owners`;
 - `status_history`;
 - `service_comments`;
-- `service_timeline_events`.
+- `service_timeline_events`;
+- `integration_sync_state`.
 
 ### 19.3. Текущее состояние
 `services.current_status` хранит текущее нормализованное прикладное состояние.
@@ -714,6 +721,13 @@ UI, прикладная логика и интеграции не должны 
 ### 19.14. Канонический идентификатор сервиса
 Основным уникальным прикладным идентификатором сервиса в системе является `service_key`.  
 Для UI-маршрутизации используется `slug`.
+
+### 19.15. Service timeline events
+Для V1 минимально поддерживаются следующие типы `service_timeline_events`:
+- `problem_confirmed`;
+- `problem_confirmation_revoked`;
+- `maintenance_started`;
+- `maintenance_ended`.
 
 ---
 
