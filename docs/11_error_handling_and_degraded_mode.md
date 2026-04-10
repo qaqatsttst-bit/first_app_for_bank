@@ -5,13 +5,14 @@
 Документ фиксирует:
 - taxonomy ошибок;
 - degraded behavior;
-- policy для unhealthy integration;
-- retry/error thresholds в operational-logic контексте.
+- semantic policy для unhealthy integration;
+- retry/error semantics в operational-logic контексте.
 
 Этот документ описывает error/degraded semantics системы.
 
 Он не является:
 - основным policy-документом по retention/session/security baseline;
+- numeric source-of-truth document по thresholds;
 - procedural runbook document;
 - local setup guide.
 
@@ -32,7 +33,7 @@
 
 ### 2.2. Что живёт в других документах
 
-- thresholds, retention, session/re-auth и policy-level baseline живут в `10_non_functional_requirements.md`;
+- все exact numeric thresholds живут в `10_non_functional_requirements.md`;
 - runbook execution, verification и remediation steps живут в `12_run_guide.md`;
 - environment and local run concerns живут в `14_environment_and_run.md`.
 
@@ -68,7 +69,7 @@ Metrics failures не должны ломать Overview / History / Timeline / 
 
 Если status source недоступен:
 - пока stale threshold не превышен, используется last known status;
-- после stale threshold сервис уходит в `Unknown`.
+- после достижения threshold из `10_non_functional_requirements.md` сервис уходит в `Unknown`.
 
 ### 5.2. Partial response
 
@@ -102,28 +103,25 @@ Metrics failures не должны ломать Overview / History / Timeline / 
 
 ---
 
-## 6. Retry policy
+## 6. Retry semantics
 
 ### 6.1. Interactive user flows
 
-- max retry = `1`
+Interactive flows должны использовать retry-budget, заданный в `10_non_functional_requirements.md`.
 
 ### 6.2. Internal polling
 
-- допускается controlled retry по integration policy;
-- retry не должен приводить к бесконечным блокировкам.
-
-Policy-level baseline и timeout values синхронизируются с `10_non_functional_requirements.md`.
+Internal polling может использовать controlled retry по integration policy, но не должен приводить к бесконечным блокировкам.
 
 ---
 
-## 7. Unhealthy integration policy
+## 7. Unhealthy integration semantics
 
-Интеграция получает `is_healthy = false`, если:
-- `3` подряд polling cycles завершились ошибкой;
-- либо `last_successful_sync_at` старше `15 минут` для обязательной интеграции;
-- либо `partial_response` повторяется `3` раза подряд;
-- либо repeated invalid payload errors делают интеграцию непригодной для доверенного чтения.
+Интеграция считается semantic-непригодной для доверенного normal-read поведения, если:
+- repeated failures исчерпали допустимый unhealthy threshold;
+- repeated partial responses делают состояние недостоверным;
+- repeated invalid payload / validation failures не позволяют доверенно использовать интеграцию как источник истины;
+- длительное отсутствие trusted successful sync превышает thresholds из `10_non_functional_requirements.md`.
 
 Возврат к `healthy` допустим только после успешного цикла, который восстанавливает доверенное состояние интеграции.
 
@@ -181,4 +179,4 @@ Policy-level baseline и timeout values синхронизируются с `10_
 - `12_run_guide.md`
 - `14_environment_and_run.md`
 
-Если возникает конфликт, `01_project_foundation.md` имеет приоритет.
+Если возникает конфликт, `10_non_functional_requirements.md` является источником exact numeric thresholds, а `01_project_foundation.md` — источником product/domain-level решений.
