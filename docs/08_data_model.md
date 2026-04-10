@@ -15,6 +15,7 @@
 - Исторически значимые сущности используют деактивацию, а не физическое удаление.
 - Прикладные изменения, требующие аудита по foundation, должны порождать audit records.
 - Все role/governance ограничения должны поддерживаться не только приложением, но и schema-level constraints там, где это разумно и безопасно.
+- V1 не вводит отдельную прикладную сущность `service_notes`; пользовательский operational context представляется через `service_comments`, `service_timeline_events` и audit semantics там, где это применимо.
 
 ---
 
@@ -334,6 +335,7 @@ Draft service может временно не иметь:
 
 Этот документ обязан быть синхронизирован с:
 - `01_project_foundation.md`
+- `04_glossary.md`
 - `09_pages_and_navigation.md`
 - `10_non_functional_requirements.md`
 
