@@ -15,9 +15,42 @@
 
 ---
 
-## 3. Permission matrix
+## 3. Interpretation rules
 
-### 3.1. View permissions
+### 3.1. ServiceOwner interpretation rule
+
+Для owner-scoped permissions в V1 требуется одновременно:
+- активная роль `ServiceOwner`;
+- активная ownership relation к конкретному сервису.
+
+Это правило применяется ко всем строкам матрицы, где указано `Yes (own service)`.
+
+### 3.2. No scope without relation
+
+Роль `ServiceOwner` без ownership relation к конкретному сервису не даёт права выполнять owner-scoped действия по этому сервису.
+
+### 3.3. No owner rights from relation alone
+
+Ownership relation без роли `ServiceOwner` не даёт owner-scoped прав.
+
+### 3.4. Admin override
+
+`Administrator` может выполнять административно разрешённые действия без ownership relation.
+
+### 3.5. Enforcement rule
+
+Все permissions должны применяться:
+- в UI;
+- в backend authorization;
+- в application use cases.
+
+UI-only hiding не считается enforcement.
+
+---
+
+## 4. Permission matrix
+
+### 4.1. View permissions
 
 | Action | Operator | TechnicalSpecialist | ServiceOwner | Administrator |
 |---|---|---|---|---|
@@ -32,7 +65,7 @@
 | View role-safe diagnostics | Yes | Yes | Yes | Yes |
 | View admin diagnostics | No | No | No | Yes |
 
-### 3.2. Comment / incident-context actions
+### 4.2. Comment / incident-context actions
 
 | Action | Operator | TechnicalSpecialist | ServiceOwner | Administrator |
 |---|---|---|---|---|
@@ -40,7 +73,7 @@
 | Confirm problem | No | Yes | No | Yes |
 | Revoke confirmation | No | Yes | No | Yes |
 
-### 3.3. Link actions
+### 4.3. Link actions
 
 | Action | Operator | TechnicalSpecialist | ServiceOwner | Administrator |
 |---|---|---|---|---|
@@ -51,7 +84,7 @@
 | Edit `alerts` | No | No | No | Yes |
 | Edit `other` | No | No | No | Yes |
 
-### 3.4. Service governance actions
+### 4.4. Service governance actions
 
 | Action | Operator | TechnicalSpecialist | ServiceOwner | Administrator |
 |---|---|---|---|---|
@@ -63,7 +96,7 @@
 | Change service_type | No | No | No | Yes |
 | Change integration keys | No | No | No | Yes |
 
-### 3.5. User/role actions
+### 4.5. User/role actions
 
 | Action | Operator | TechnicalSpecialist | ServiceOwner | Administrator |
 |---|---|---|---|---|
@@ -71,7 +104,7 @@
 | Remove role | No | No | No | Yes |
 | Deactivate user | No | No | No | Yes |
 
-### 3.6. Maintenance / admin actions
+### 4.6. Maintenance / admin actions
 
 | Action | Operator | TechnicalSpecialist | ServiceOwner | Administrator |
 |---|---|---|---|---|
@@ -82,17 +115,10 @@
 
 ---
 
-## 4. Enforcement rule
-
-Все permissions должны применяться:
-- в UI;
-- в backend authorization;
-- в application use cases.
-
-UI-only hiding не считается enforcement.
-
----
-
 ## 5. Consistency rule
 
-Этот документ обязан быть синхронизирован с `01_project_foundation.md`.
+Этот документ обязан быть синхронизирован с:
+- `01_project_foundation.md`
+- `04_glossary.md`
+
+Если возникает конфликт, `01_project_foundation.md` имеет приоритет.
