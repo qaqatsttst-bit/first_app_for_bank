@@ -1,4 +1,4 @@
-# 12_run_guide.md
+ # 12_run_guide.md
 
 ## 1. Назначение документа
 
@@ -16,7 +16,7 @@
 - `migration-assisted assignment`
 - эквивалентный backend-only controlled operational runbook
 
-Использование иных ad hoc способов административного изменения запрещено.
+Иные ad hoc способы административного изменения запрещены.
 
 ---
 
@@ -42,8 +42,6 @@ Backend-only administrative runbooks могут запускать только:
 ---
 
 ## 5. Обязательный post-action verification
-
-Каждый backend-only administrative action обязан завершаться проверкой:
 
 ### 5.1. Business effect verification
 Проверить, что изменение реально применилось:
@@ -79,10 +77,6 @@ Backend-only administrative runbooks могут запускать только:
 - требуется remediation или controlled rollback;
 - runbook не считается завершённым успешно.
 
-Если action не применился:
-- фиксируется ошибка;
-- повторное выполнение допускается только по правилам operational control.
-
 ---
 
 ## 7. Minimum logging for runbooks
@@ -101,7 +95,7 @@ Backend-only administrative runbooks могут запускать только:
 ## 8. Security rules for runbooks
 
 - запуск только в доверенном серверном контуре;
-- не использовать личные или неуправляемые каналы выполнения;
+- не использовать неуправляемые каналы выполнения;
 - секреты и sensitive payloads не должны логироваться в открытом виде;
 - результаты runbook не должны передаваться в незащищённые каналы.
 
