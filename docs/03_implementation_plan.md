@@ -1,6 +1,5 @@
 
 
-```md
 # 03_implementation_plan.md
 
 ## 1. Назначение документа
