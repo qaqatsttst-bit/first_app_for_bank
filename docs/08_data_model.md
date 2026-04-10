@@ -16,6 +16,7 @@
 - Прикладные изменения, требующие аудита по foundation, должны порождать audit records.
 - Все role/governance ограничения должны поддерживаться не только приложением, но и schema-level constraints там, где это разумно и безопасно.
 - V1 не вводит отдельную прикладную сущность `service_notes`; пользовательский operational context представляется через `service_comments`, `service_timeline_events` и audit semantics там, где это применимо.
+- Exact numeric thresholds для stale/unhealthy/retry не фиксируются здесь и должны приходить из `10_non_functional_requirements.md`.
 
 ---
 
@@ -126,6 +127,11 @@
 - не более одного active primary owner на сервис
 - owner у active service обязателен по правилам foundation
 
+Политика:
+- `service_owners` фиксирует ownership relation, а не заменяет прикладную роль `ServiceOwner`;
+- owner-scoped access требует и активной ownership relation, и активной роли `ServiceOwner`;
+- ownership relation без роли не должна сама по себе рассматриваться как grant прикладных owner-прав.
+
 ### 3.7. service_links
 
 Обязательные поля:
@@ -218,7 +224,7 @@
 
 Политика:
 - одна запись может описывать текущее агрегированное состояние интеграции
-- exact unhealthy threshold определяется не здесь, а в NFR/error-handling docs
+- exact unhealthy threshold определяется не здесь, а в `10_non_functional_requirements.md`
 
 ---
 
@@ -316,6 +322,7 @@ Draft service может временно не иметь:
 - active service с invalid links
 - duplicate link conflict
 - owner/link edits вне разрешённого role scope
+- ownership relation without required role where owner-scoped business action expected
 
 ---
 
@@ -336,6 +343,7 @@ Draft service может временно не иметь:
 Этот документ обязан быть синхронизирован с:
 - `01_project_foundation.md`
 - `04_glossary.md`
+- `05_role_permission_matrix.md`
 - `09_pages_and_navigation.md`
 - `10_non_functional_requirements.md`
 
