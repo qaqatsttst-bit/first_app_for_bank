@@ -1,5 +1,5 @@
 
-### `docs/03_implementation_plan.md`
+
 ```md
 # 03_implementation_plan.md
 
