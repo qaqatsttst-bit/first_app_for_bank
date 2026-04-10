@@ -49,25 +49,41 @@
 - `ServiceOwner`
 - `Administrator`
 
-### 3.5. ServiceOwner
+### 3.5. ServiceOwner role
 
-`ServiceOwner` — связь между сервисом и ответственным сотрудником.
+`ServiceOwner` как роль — одна из четырёх фиксированных прикладных ролей V1.
 
-Термин означает именно ownership relation, а не отдельную новую роль сверх фиксированного набора ролей V1.
+Эта роль определяет тип owner-scoped действий, которые пользователь **может** выполнять при наличии нужного service scope.
 
-### 3.6. ServiceComment
+### 3.6. Ownership relation / service ownership
+
+`Ownership relation` — связь между пользователем и конкретным сервисом, обычно представленная сущностью `service_owners`.
+
+Эта связь определяет, **к какому именно сервису** применим owner-scope.
+
+### 3.7. ServiceOwner access semantics
+
+Owner-scoped access в V1 требует одновременно:
+- активную роль `ServiceOwner`;
+- активную ownership relation к конкретному сервису.
+
+Role без ownership relation не даёт owner-scoped прав.
+
+Ownership relation без роли `ServiceOwner` не даёт owner-scoped прав.
+
+### 3.8. ServiceComment
 
 `ServiceComment` — append-only служебный комментарий по сервису.
 
-### 3.7. ServiceTimelineEvent
+### 3.9. ServiceTimelineEvent
 
 `ServiceTimelineEvent` — прикладное событие в timeline сервиса, фиксирующее значимое operational/admin действие.
 
-### 3.8. StatusHistory
+### 3.10. StatusHistory
 
 `StatusHistory` — неизменяемая историческая запись о смене прикладного статуса сервиса.
 
-### 3.9. ServiceLink
+### 3.11. ServiceLink
 
 `ServiceLink` — служебная ссылка, относящаяся к конкретному сервису.
 
@@ -79,7 +95,7 @@
 - `docs`
 - `other`
 
-### 3.10. IntegrationSyncState
+### 3.12. IntegrationSyncState
 
 `IntegrationSyncState` — агрегированное текущее состояние конкретной интеграции как источника данных, а не per-service history.
 
@@ -191,7 +207,7 @@
 
 ### 6.6. unhealthy integration
 
-`Unhealthy integration` — состояние интеграции, при котором её данные больше не считаются доверенно пригодными для нормальной operational работы по agreed thresholds/policies.
+`Unhealthy integration` — состояние интеграции, при котором её данные больше не считаются доверенно пригодными для нормальной operational работы по thresholds, зафиксированным в `10_non_functional_requirements.md`.
 
 ---
 
@@ -306,7 +322,7 @@
 
 Этот документ обязан быть синхронизирован с:
 - `01_project_foundation.md`
-- `06_status_model.md`
+- `05_role_permission_matrix.md`
 - `08_data_model.md`
 - `09_pages_and_navigation.md`
 - `11_error_handling_and_degraded_mode.md`
