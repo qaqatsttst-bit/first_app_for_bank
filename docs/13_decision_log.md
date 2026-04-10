@@ -51,7 +51,7 @@
 `30d` range допустим только во Full V1 и только при достаточном retention.
 
 ### D-010. Unhealthy integration threshold lives outside foundation
-Точные thresholds фиксируются в `10_non_functional_requirements.md` и `11_error_handling_and_degraded_mode.md`.
+Точные thresholds фиксируются в `10_non_functional_requirements.md`.
 
 ### D-011. Exact contracts live in 02_solution_design.md
 JSON/status-source contract и validation shapes не живут в foundation.
@@ -79,6 +79,28 @@ Bootstrap-admin действует до появления первого active
 - `service_timeline_events`
 - audit semantics, где это уместно
 
+### D-016. Owner-scoped access requires both role and ownership relation
+Owner-scoped permissions требуют одновременно:
+- активную роль `ServiceOwner`;
+- активную ownership relation к конкретному сервису.
+
+Ни роль без relation, ни relation без роли не дают owner-scoped прав.
+
+### D-017. Exact numeric thresholds live only in 10_non_functional_requirements.md
+Все точные stale / retry / unhealthy numeric values должны канонически жить в `10_non_functional_requirements.md`.
+
+Другие документы могут использовать их семантически, но не должны становиться вторым источником numeric truth.
+
+### D-018. 09_pages_and_navigation.md is a page-behavior contract
+`09_pages_and_navigation.md` фиксирует обязательные page/section states, markers и visibility boundaries.
+
+Он не является pixel-perfect design spec, но является обязательным UI behavior contract document.
+
+### D-019. Literal startup commands and config keys live near code
+`14_environment_and_run.md` фиксирует process-level и setup-level правила запуска.
+
+Literal startup commands, exact migration commands, env key names и executable startup artifacts должны жить рядом с кодом и быть непосредственным source of execution truth.
+
 ---
 
 ## 3. Change control
@@ -95,3 +117,4 @@ Bootstrap-admin действует до появления первого active
 Этот документ обязан быть синхронизирован с:
 - `01_project_foundation.md`
 - `04_glossary.md`
+- `10_non_functional_requirements.md`
