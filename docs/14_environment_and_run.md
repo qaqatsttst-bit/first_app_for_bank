@@ -5,11 +5,11 @@
 Документ фиксирует правила локального запуска, environment configuration, database bootstrap, migrations, seed/bootstrap assumptions и минимальные verification steps для V1.
 
 Этот документ является основным источником истины для:
-- local developer run;
+- local developer run process;
 - environment prerequisites;
 - configuration boundaries;
 - migrations/bootstrap flow;
-- post-start verification.
+- post-start verification expectations.
 
 Он не заменяет:
 - operational admin runbook (`12_run_guide.md`);
@@ -32,7 +32,8 @@
 - bootstrap первого администратора;
 - seed/demo/test assumptions;
 - базовую проверку после запуска;
-- troubleshooting стартовых проблем.
+- troubleshooting стартовых проблем;
+- границу между process-level run docs и executable startup artifacts.
 
 ### 2.2. Что не покрывается
 
@@ -40,11 +41,46 @@
 - product boundaries и business rules;
 - детальную permission matrix;
 - детальную taxonomy degraded/error states;
-- operational execution backend-only admin actions в production-like контуре.
+- operational execution backend-only admin actions в production-like контуре;
+- pixel-perfect UI behavior;
+- literal code-level implementation details, если они already belong next to executable artifacts.
 
 ---
 
-## 3. Минимальные требования к окружению
+## 3. Command source-of-truth policy
+
+### 3.1. Process vs executable truth
+
+Этот документ фиксирует **process-level truth** по запуску и bootstrap.
+
+Literal execution truth должна жить рядом с кодом, например в:
+- repo README;
+- startup scripts;
+- migration scripts;
+- docker/dev-compose artifacts;
+- code-adjacent runbooks;
+- CI/local automation files.
+
+### 3.2. What must not drift
+
+Следующие вещи не должны расходиться между кодом и docs:
+- canonical startup path;
+- canonical migration path;
+- bootstrap expectations;
+- required configuration groups;
+- post-start verification expectations.
+
+### 3.3. Minimum repository requirement
+
+Репозиторий должен содержать хотя бы один явно видимый canonical startup artifact, который сообщает разработчику:
+- как применить migrations;
+- как запустить приложение;
+- какие configuration inputs обязательны;
+- как выполнить минимальную post-start verification.
+
+---
+
+## 4. Минимальные требования к окружению
 
 Для V1 предполагаются:
 - .NET SDK совместимой версии с проектом;
@@ -57,16 +93,16 @@
 
 ---
 
-## 4. Configuration groups
+## 5. Configuration groups
 
-### 4.1. Database configuration
+### 5.1. Database configuration
 
 Должна существовать конфигурация для:
 - PostgreSQL connection string;
 - database name/schema settings, если используются;
 - migration execution context.
 
-### 4.2. OIDC configuration
+### 5.2. OIDC configuration
 
 Должна существовать конфигурация для:
 - issuer;
@@ -75,7 +111,7 @@
 - callback/redirect settings;
 - required claims expectations.
 
-### 4.3. Status source configuration
+### 5.3. Status source configuration
 
 Должна существовать конфигурация для:
 - status source base URL;
@@ -84,7 +120,7 @@
 - polling interval;
 - retry settings в допустимых границах.
 
-### 4.4. Metrics configuration
+### 5.4. Metrics configuration
 
 Должна существовать конфигурация для:
 - Prometheus base URL;
@@ -92,7 +128,7 @@
 - default range/step behavior, если это требуется приложением;
 - safe degraded handling при недоступности источника.
 
-### 4.5. Security / bootstrap configuration
+### 5.5. Security / bootstrap configuration
 
 Должна существовать конфигурация для:
 - `BOOTSTRAP_ADMIN_EMAILS` и/или trusted `sub`;
@@ -101,7 +137,7 @@
 
 ---
 
-## 5. Правила работы с конфигурацией
+## 6. Правила работы с конфигурацией
 
 - Секреты не должны жить в коде.
 - Секреты не должны коммититься в репозиторий в открытом виде.
@@ -113,7 +149,7 @@
 
 ---
 
-## 6. Database bootstrap
+## 7. Database bootstrap
 
 Для первого запуска среды должна существовать возможность:
 1. создать БД;
@@ -126,16 +162,17 @@
 
 ---
 
-## 7. Migrations policy
+## 8. Migrations policy
 
 - Изменения schema-level модели должны доставляться через управляемые migrations.
 - Migration flow должен быть repeatable и предсказуемым.
 - Migration execution не должен скрыто выполнять неаудируемые административные business changes, если такие изменения относятся к backend-only administrative flows.
 - `migration-assisted assignment` допустим как controlled path только в пределах правил foundation и admin run guide.
+- Literal migration command должен быть доступен рядом с кодом как executable source of truth.
 
 ---
 
-## 8. Bootstrap первого администратора
+## 9. Bootstrap первого администратора
 
 Для V1 должен существовать bootstrap-механизм первого администратора.
 
@@ -148,9 +185,9 @@
 
 ---
 
-## 9. Seed / demo / test assumptions
+## 10. Seed / demo / test assumptions
 
-### 9.1. Controlled seed
+### 10.1. Controlled seed
 
 `Controlled seed` допустим для:
 - reference data;
@@ -158,22 +195,22 @@
 - предопределённого справочника ролей;
 - test/dev data, если это контролируемо и не противоречит foundation.
 
-### 9.2. Demo/test data boundary
+### 10.2. Demo/test data boundary
 
 Demo/test data:
 - не должны маскироваться под production truth;
 - не должны ломать activation rules;
 - не должны подменять real audit expectations для production-like среды.
 
-### 9.3. Seed and audit
+### 10.3. Seed and audit
 
 Если seed выполняет административно значимое business change в production-like или shared environment, должны соблюдаться правила auditability и controlled execution.
 
 ---
 
-## 10. Run modes
+## 11. Run modes
 
-### 10.1. Local developer mode
+### 11.1. Local developer mode
 
 В local developer mode допускается:
 - использование локальной БД;
@@ -181,14 +218,14 @@ Demo/test data:
 - controlled degraded mode для отсутствующих интеграций;
 - запуск без полного production perimeter.
 
-### 10.2. Integration/test mode
+### 11.2. Integration/test mode
 
 В integration/test mode желательно:
 - использовать real schema migrations;
 - использовать максимально близкую конфигурацию auth/integration;
 - проверять поведение degraded mode на реальных integration boundaries.
 
-### 10.3. Production-like mode
+### 11.3. Production-like mode
 
 В production-like среде:
 - секреты берутся только из безопасного storage/configuration;
@@ -197,7 +234,42 @@ Demo/test data:
 
 ---
 
-## 11. Минимальная проверка после запуска
+## 12. Minimum developer startup flow
+
+Минимальный ожидаемый startup flow для разработчика выглядит так:
+1. подготовить локальное окружение и конфигурацию;
+2. поднять PostgreSQL;
+3. применить canonical migrations path;
+4. подготовить bootstrap/reference data, если это требуется;
+5. запустить приложение canonical startup path;
+6. выполнить login через OIDC или approved dev substitute;
+7. пройти post-start verification checklist;
+8. убедиться, что degraded behavior корректно срабатывает для отсутствующих интеграций.
+
+Literal команды для шагов 2–5 должны быть доступны рядом с кодом как executable startup artifacts.
+
+---
+
+## 13. Minimum required local artifacts
+
+В репозитории должно существовать достаточно артефактов, чтобы разработчик мог однозначно понять:
+- как настраивается конфигурация;
+- как применяются migrations;
+- как запускается приложение;
+- как запускать local/dev mode;
+- как отличить normal startup от degraded-but-acceptable startup.
+
+Это может быть реализовано одним или несколькими способами, например:
+- README;
+- scripts;
+- compose files;
+- dev environment notes рядом с кодом.
+
+Конкретный формат не фиксируется здесь, но сам факт существования такого пути обязателен.
+
+---
+
+## 14. Минимальная проверка после запуска
 
 После запуска приложения должно быть возможно проверить:
 - приложение стартует без критической ошибки;
@@ -211,7 +283,7 @@ Demo/test data:
 
 ---
 
-## 12. Recommended startup verification checklist
+## 15. Recommended startup verification checklist
 
 Минимально рекомендуется проверить:
 1. открывается главная страница;
@@ -225,9 +297,9 @@ Demo/test data:
 
 ---
 
-## 13. Troubleshooting
+## 16. Troubleshooting
 
-### 13.1. Database unavailable
+### 16.1. Database unavailable
 
 Если БД недоступна:
 - проверить connection string;
@@ -235,7 +307,7 @@ Demo/test data:
 - проверить, что migrations были применены;
 - не считать среду готовой, пока schema verification не успешна.
 
-### 13.2. OIDC misconfiguration
+### 16.2. OIDC misconfiguration
 
 Если аутентификация не работает:
 - проверить issuer/client settings;
@@ -243,7 +315,7 @@ Demo/test data:
 - проверить redirect/callback settings;
 - проверить, что локальная модель пользователя создаётся и связывается корректно.
 
-### 13.3. Bootstrap admin not assigned
+### 16.3. Bootstrap admin not assigned
 
 Если первый администратор не назначается:
 - проверить bootstrap configuration;
@@ -251,14 +323,14 @@ Demo/test data:
 - проверить, что первый active admin ещё не существует;
 - проверить audit/technical logs.
 
-### 13.4. Status source unavailable
+### 16.4. Status source unavailable
 
 Если недоступен status source:
 - проверить endpoint/auth configuration;
 - проверить timeout/retry configuration;
 - проверить, что система переходит в ожидаемый degraded/stale behavior, а не падает целиком.
 
-### 13.5. Prometheus unavailable
+### 16.5. Prometheus unavailable
 
 Если недоступен Prometheus:
 - проверить endpoint/query timeout;
@@ -267,7 +339,7 @@ Demo/test data:
 
 ---
 
-## 14. Consistency rule
+## 17. Consistency rule
 
 Этот документ обязан быть синхронизирован с:
 - `01_project_foundation.md`
