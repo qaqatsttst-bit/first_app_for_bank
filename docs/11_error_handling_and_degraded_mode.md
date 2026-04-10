@@ -21,26 +21,6 @@
 - `unknown_external_status`
 - `invalid_timestamp`
 
-### 2.1. transport_error
-
-Запрос не выполнен или не получен валидный transport-level response.
-
-### 2.2. partial_response
-
-Источник вернул данные только по части сервисов.
-
-### 2.3. invalid_payload
-
-Payload не соответствует ожидаемой contract-shape на уровне solution design.
-
-### 2.4. unknown_external_status
-
-Получен статус, который не маппится в foundation mapping.
-
-### 2.5. invalid_timestamp
-
-Получен timestamp, который не может быть корректно интерпретирован.
-
 ---
 
 ## 3. Error classes for metrics integration
@@ -59,20 +39,17 @@ Metrics failures не должны ломать Overview / History / Timeline / 
 ## 4. Degraded behavior
 
 ### 4.1. Status source down
-
 Если status source недоступен:
 - пока stale threshold не превышен, используется last known status;
 - после stale threshold сервис уходит в `Unknown`.
 
 ### 4.2. Partial response
-
 При partial response:
 - успешными считаются только сервисы с валидными данными;
 - для остальных применяется stale-policy;
 - интеграция получает degraded marker.
 
 ### 4.3. Prometheus down
-
 Если Prometheus недоступен:
 - service overview остаётся доступным;
 - metrics section показывает degraded state;
@@ -82,12 +59,12 @@ Metrics failures не должны ломать Overview / History / Timeline / 
 
 ## 5. Retry policy
 
-В интерактивных пользовательских сценариях:
+### 5.1. Interactive user flows
 - max retry = `1`
 
-Во внутреннем polling:
+### 5.2. Internal polling
 - допускается controlled retry по integration policy;
-- exact retry cadence определяется реализацией, но не должен приводить к бесконечным блокировкам.
+- retry не должен приводить к бесконечным блокировкам.
 
 ---
 
@@ -109,7 +86,7 @@ Metrics failures не должны ломать Overview / History / Timeline / 
 - integration unhealthy
 - stale status beyond threshold
 - repeated payload validation errors
-- repeated duplicate/invalid link validation failures, если они блокируют административные сценарии
+- repeated duplicate/invalid link validation failures
 - missing required integration keys у active services
 
 ---
