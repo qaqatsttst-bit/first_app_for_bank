@@ -59,6 +59,26 @@ JSON/status-source contract и validation shapes не живут в foundation.
 ### D-012. Bootstrap first admin is one-time
 Bootstrap-admin действует до появления первого active admin и затем должен быть отключён.
 
+### D-013. V1 glossary is canonical
+Канонический словарь терминов V1 фиксируется в `04_glossary.md`.
+
+Новые термины и переопределение уже согласованных терминов не должны появляться в реализации и вспомогательных документах без явного обновления glossary и, при необходимости, foundation.
+
+### D-014. Local setup documentation is separated from admin run guide
+Локальный запуск, environment bootstrap, migrations и developer run instructions не живут в `12_run_guide.md`.
+
+Эти темы выносятся в `14_environment_and_run.md`.
+
+`12_run_guide.md` остаётся документом про backend-only administrative flows, verification и remediation.
+
+### D-015. V1 does not introduce separate service notes entity
+В V1 не вводится отдельная прикладная сущность `service_notes`.
+
+Пользовательский operational context представляется через:
+- `service_comments`
+- `service_timeline_events`
+- audit semantics, где это уместно
+
 ---
 
 ## 3. Change control
@@ -72,4 +92,6 @@ Bootstrap-admin действует до появления первого active
 
 ## 4. Consistency rule
 
-Этот документ обязан быть синхронизирован с `01_project_foundation.md`.
+Этот документ обязан быть синхронизирован с:
+- `01_project_foundation.md`
+- `04_glossary.md`
